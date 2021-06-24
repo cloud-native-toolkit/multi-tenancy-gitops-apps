@@ -1,0 +1,14 @@
+apiVersion: route.openshift.io/v1
+kind: Route
+metadata:
+  name: soapserver
+spec:
+  port:
+    targetPort: web
+  tls:
+    termination: passthrough
+  to:
+    kind: Service
+    name: soapserver
+    weight: 100
+  wildcardPolicy: None

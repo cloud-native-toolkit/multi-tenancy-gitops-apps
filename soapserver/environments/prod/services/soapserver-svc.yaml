@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: soapserver
+spec:
+  ports:
+  - name: web
+    port: 8443
+    protocol: TCP
+    targetPort: 8443
+  selector:
+    app: soapserver
+  sessionAffinity: None
+  type: ClusterIP

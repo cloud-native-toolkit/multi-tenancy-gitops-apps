@@ -1,0 +1,12 @@
+apiVersion: route.openshift.io/v1
+kind: Route
+metadata:
+  name: soapserver-nonsecure
+spec:
+  port:
+    targetPort: web
+  to:
+    kind: Service
+    name: soapserver-nonsecure
+    weight: 100
+  wildcardPolicy: None
