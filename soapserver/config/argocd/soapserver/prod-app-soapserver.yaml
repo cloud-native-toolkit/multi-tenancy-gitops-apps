@@ -8,11 +8,11 @@ metadata:
     - resources-finalizer.argocd.argoproj.io
 spec:
   destination:
-    namespace: prod
+    namespace: soapserver
     server: https://kubernetes.default.svc
   project: applications
   source:
-    path: soapserver/environments/prod
+    path: soapserver/environments/soapserver
     repoURL: https://github.com/cloud-native-toolkit-demos/multi-tenancy-gitops-apps.git
     targetRevision: master
   syncPolicy:
