@@ -3,7 +3,7 @@ serviceaccount:
   argocd_application_controller: argocd-cluster-argocd-application-controller
 spec:
   shared_configuration:
-    sc_deployment_hostname_suffix: to-be-set-via-presync-hook
+    sc_deployment_hostname_suffix: cp4a.gitops-cp4ba-6ccd7f378ae819553d37d5f2ee142bd6-0000.tor01.containers.appdomain.cloud
     sc_deployment_platform: ROKS
 storageclass:
   gold: cp4a-file-retain-gold-gid

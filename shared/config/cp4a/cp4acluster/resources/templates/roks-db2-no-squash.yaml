@@ -14,7 +14,7 @@ spec:
           image: quay.io/openshift/origin-cli:latest
           env:
             - name: ARGOCD_APP_NAME
-              value: "{{.Values.argocd_app_name}}"
+              value: cp4a-app
             - name: ARGOCD_NAMESPACE
               value: openshift-gitops
           command:
