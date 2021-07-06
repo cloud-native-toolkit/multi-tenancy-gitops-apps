@@ -6,7 +6,7 @@ NAMESPACE=openshift-operators
 SEALEDSECRET_NAMESPACE=sealed-secrets
 
 # Create Kubernetes Secret yaml
-oc create secret docker-registry ibm-entitlement-key \
+oc create secret docker-registry admin.registrykey \
 --docker-username=cp \
 --docker-server=cp.icr.io \
 --docker-password=${IBM_ENTITLEMENT_KEY} \
