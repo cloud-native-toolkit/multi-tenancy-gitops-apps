@@ -1,0 +1,9 @@
+apiVersion: v2
+name: slack-notifications
+version: 0.1.2
+appVersion: 1.16.0
+description: Slack Notifications
+dependencies:
+  - name: slack-notifications
+    version: 0.1.5
+    repository: https://cloud-native-toolkit.github.io/toolkit-charts/
