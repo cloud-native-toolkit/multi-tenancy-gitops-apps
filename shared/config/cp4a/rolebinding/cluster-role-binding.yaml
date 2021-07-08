@@ -19,4 +19,4 @@ roleRef:
 subjects:
   - kind: ServiceAccount
     name: ibm-cp4a-operator
-    namespace: openshift-operators
+    namespace: cloudpak
