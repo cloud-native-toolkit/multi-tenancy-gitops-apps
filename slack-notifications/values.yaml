@@ -2,6 +2,7 @@ slack-notifications:
   replicaCount: 1
 
   image:
+    # source code for image can be found at https://github.com/cloud-native-toolkit/slack-notifications
     repository: quay.io/ibmgaragecloud/slack-notifications
     pullPolicy: IfNotPresent
     # Overrides the image tag whose default is the chart appVersion.
@@ -22,9 +23,11 @@ slack-notifications:
   broker:
     name: default
 
-  # Place sealed secret here for slack url
   secret:
-    encryptedSlackUrl: encrypted_slack_url
+    # provide name of the secret that contains slack url
+    name: slack_url
+    # provide key of the secret that contains slack url
+    key: SLACK.URL
 
   triggers: 
     - name: taskrun-success-trigger
