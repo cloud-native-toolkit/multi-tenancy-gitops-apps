@@ -1,0 +1,449 @@
+apiVersion: v1
+items:
+- apiVersion: tekton.dev/v1beta1
+  kind: Task
+  metadata:
+    name: create-config
+  spec:
+    params:
+    - name: is-config-directory
+      type: string
+    - name: is-infra-directory
+      type: string
+    - name: is-configuration-keystore
+      type: string
+    - name: is-configuration-truststore
+      type: string
+    - name: is-configuration-setdbparms
+      type: string
+    - name: is-configuration-serverconf
+      type: string
+    - name: is-configuration-policyproject
+      type: string
+    - name: is-configuration-loopbackdatasource
+      type: string
+    results:
+    - description: ""
+      name: configurations
+    steps:
+    - env:
+      - name: IS_CONFIG_DIRECTORY
+        value: $(params.is-config-directory)
+      - name: IS_INFRA_DIRECTORY
+        value: $(params.is-infra-directory)
+      - name: IS_CONFIGURATION_KEYSTORE
+        value: $(params.is-configuration-keystore)
+      - name: IS_CONFIGURATION_TRUSTSTORE
+        value: $(params.is-configuration-truststore)
+      - name: IS_CONFIGURATION_SETDBPARMS
+        value: $(params.is-configuration-setdbparms)
+      - name: IS_CONFIGURATION_SERVERCONF
+        value: $(params.is-configuration-serverconf)
+      - name: IS_CONFIGURATION_POLICYPROJECT
+        value: $(params.is-configuration-policyproject)
+      - name: IS_CONFIGURATION_LOOPBACKDATASOURCE
+        value: $(params.is-configuration-loopbackdatasource)
+      - name: WORKSPACE_PATH
+        value: $(workspaces.workspace.path)
+      image: image-registry.openshift-image-registry.svc:5000/ace/yq-zip
+      name: setup-configuration
+      resources: {}
+      script: |
+        #!/bin/bash
+
+        set -e
+
+        config_template_path=${WORKSPACE_PATH}/${IS_INFRA_DIRECTORY}/configurations
+        rendered_config_directory=${WORKSPACE_PATH}/configurations
+        config_definition_path=${WORKSPACE_PATH}/${IS_CONFIG_DIRECTORY}
+
+        create_configurations() {
+          local type=$1
+          local config=$2
+
+          local sanitised_file_name=$(echo $config | sed 's/\./_/g;s/-/_/g;s/^[[:upper:]]/\L&/;s/[[:upper:]]/\L_&/g')
+          local sanitised_config_name=$(echo $config | sed 's/^[[:upper:]]/\L&/;s/_/-/g;s/[[:upper:]]/\L-&/g')
+
+          case $type in
+          setdbparms | keystore | truststore)
+            cp $config_template_path/configuration-with-secret.yaml $rendered_config_directory/$sanitised_file_name.yaml
+
+            e=$sanitised_config_name yq e -i '.spec.secretName = env(e)' $rendered_config_directory/$sanitised_file_name.yaml
+            ;;
+          serverconf)
+            cp $config_template_path/configuration-with-data.yaml $rendered_config_directory/$sanitised_file_name.yaml
+
+            contents=$(base64 -w 0 $config_definition_path/$config)
+
+            e=$contents yq e -i '.spec.contents = env(e)' $rendered_config_directory/$sanitised_file_name.yaml
+            ;;
+          policyproject)
+            cp $config_template_path/configuration-with-data.yaml $rendered_config_directory/$sanitised_file_name.yaml
+
+            pushd $config_definition_path > /dev/null
+            contents=$(zip -r - $config | base64 -w 0)
+            popd > /dev/null
+
+            e=$contents yq e -i '.spec.contents = env(e)' $rendered_config_directory/$sanitised_file_name.yaml
+            ;;
+          loopbackdatasource)
+            cp $config_template_path/configuration-with-data.yaml $rendered_config_directory/$sanitised_file_name.yaml
+
+            pushd $config_definition_path > /dev/null
+            contents=$(zip - $config | base64 -w 0)
+            popd > /dev/null
+
+            e=$contents yq e -i '.spec.contents = env(e)' $rendered_config_directory/$sanitised_file_name.yaml
+            ;;
+          esac
+
+          e=$sanitised_config_name yq e -i '.metadata.name = env(e)' $rendered_config_directory/$sanitised_file_name.yaml
+          e=$type yq e -i '.spec.type = strenv(e)' $rendered_config_directory/$sanitised_file_name.yaml
+
+          echo $sanitised_file_name.yaml
+        }
+
+        process_configrations() {
+          local config_type=$1
+
+          for config in ${!config_type}; do
+            local config_pattern='^IS_CONFIGURATION_(.+)'
+            if [[ $config_type =~ $config_pattern ]]; then
+              local type=$(echo "${BASH_REMATCH[1]}" | sed -e 's/\(.*\)/\L\1/')
+            else
+              echo "unknown config type parameter: $config_type"
+              exit 1
+            fi
+
+            create_configurations $type $config
+
+          done
+        }
+
+        rm -rf $rendered_config_directory
+        mkdir -p $rendered_config_directory
+
+        configurations=""
+
+        for config_type in IS_CONFIGURATION_SERVERCONF IS_CONFIGURATION_SETDBPARMS \
+                      IS_CONFIGURATION_KEYSTORE IS_CONFIGURATION_TRUSTSTORE \
+                      IS_CONFIGURATION_POLICYPROJECT IS_CONFIGURATION_LOOPBACKDATASOURCE; do
+
+          configurations="${configurations} $(process_configrations $config_type)"
+
+        done
+
+        echo -n ${configurations## } > $(results.configurations.path)
+      workingDir: $(workspaces.workspace.path)
+    workspaces:
+    - name: workspace
+- apiVersion: tekton.dev/v1beta1
+  kind: Task
+  metadata:
+    name: create-is
+  spec:
+    params:
+    - name: is-infra-directory
+      type: string
+    - name: IMAGE
+      type: string
+    - name: release-name
+      type: string
+    - name: configurations
+      type: string
+    steps:
+    - image: image-registry.openshift-image-registry.svc:5000/ace/yq-zip
+      name: setup-custom-resource
+      resources: {}
+      script: |
+        is_manifest_template=$(workspaces.input.path)/$(params.is-infra-directory)/IntegrationServer.yaml
+
+        mkdir -p $(workspaces.input.path)/integration_server
+        is_manifest_rendered=$(workspaces.input.path)/integration_server/IntegrationServer.yaml
+
+        cp $is_manifest_template $is_manifest_rendered
+
+        e=$(params.release-name) yq e -i '.metadata.name = env(e)' $is_manifest_rendered
+        e=$(params.IMAGE) yq e -i '.spec.pod.containers.runtime.image = env(e)'  $is_manifest_rendered
+
+        yq --version
+
+        for configuration in $(params.configurations) ; do
+          config=$configuration yq e -i '.spec.configurations = (.spec.configurations // []) + env(config)' $is_manifest_rendered
+        done
+      workingDir: $(workspaces.input.path)
+    workspaces:
+    - name: input
+- apiVersion: tekton.dev/v1beta1
+  kind: Task
+  metadata:
+    name: generate-bar
+  spec:
+    params:
+    - name: is-source-directory
+      type: string
+    - name: is-application-names
+      type: string
+    - name: bar-location
+      type: string
+    - name: bar-filename
+      type: string
+    steps:
+    - image: image-registry.openshift-image-registry.svc:5000/ace/mqsicreatebar
+      name: generate-bar
+      resources: {}
+      script: |
+        mkdir -p $(params.bar-location)
+        mqsicreatebar.sh \
+          -data $(workspaces.workspace.path)/$(params.is-source-directory) \
+          -a $(params.is-application-names) \
+          -b $(params.bar-location)/$(params.bar-filename) -skipWSErrorCheck
+    workspaces:
+    - name: workspace
+- apiVersion: tekton.dev/v1beta1
+  kind: Task
+  metadata:
+    name: git-clone
+  spec:
+    description: |-
+      These Tasks are Git tasks to work with repositories used by other tasks in your Pipeline.
+      The git-clone Task will clone a repo from the provided url into the output Workspace. By default the repo will be cloned into the root of your Workspace. You can clone into a subdirectory by setting this Task's subdirectory param.
+    params:
+    - description: git url to clone
+      name: url
+      type: string
+    - default: ""
+      description: git revision to checkout (branch, tag, sha, ref…)
+      name: revision
+      type: string
+    - default: ""
+      description: (optional) git refspec to fetch before checking out revision
+      name: refspec
+      type: string
+    - default: "true"
+      description: defines if the resource should initialize and fetch the submodules
+      name: submodules
+      type: string
+    - default: "1"
+      description: performs a shallow clone where only the most recent commit(s) will
+        be fetched
+      name: depth
+      type: string
+    - default: "true"
+      description: defines if http.sslVerify should be set to true or false in the
+        global git config
+      name: sslVerify
+      type: string
+    - default: ""
+      description: subdirectory inside the "output" workspace to clone the git repo
+        into
+      name: subdirectory
+      type: string
+    - default: "true"
+      description: clean out the contents of the repo's destination directory (if
+        it already exists) before trying to clone the repo there
+      name: deleteExisting
+      type: string
+    - default: ""
+      description: git HTTP proxy server for non-SSL requests
+      name: httpProxy
+      type: string
+    - default: ""
+      description: git HTTPS proxy server for SSL requests
+      name: httpsProxy
+      type: string
+    - default: ""
+      description: git no proxy - opt out of proxying HTTP/HTTPS requests
+      name: noProxy
+      type: string
+    - default: "true"
+      description: log the commands used during execution
+      name: verbose
+      type: string
+    - default: gcr.io/tekton-releases/github.com/tektoncd/pipeline/cmd/git-init:v0.18.0
+      description: the image used where the git-init binary is
+      name: gitInitImage
+      type: string
+    - default: ""
+      description: the private key to use
+      name: sshPrivateKey
+      type: string
+    results:
+    - description: The precise commit SHA that was fetched by this Task
+      name: commit
+    - description: The precise URL that was fetched by this Task
+      name: url
+    steps:
+    - image: $(params.gitInitImage)
+      name: clone
+      resources: {}
+      script: |
+        #!/bin/sh
+        set -eu -o pipefail
+
+        if [[ "$(params.verbose)" == "true" ]] ; then
+          set -x
+        fi
+
+        if [[ "$(params.sshPrivateKey)" != "" ]] ; then
+          eval `ssh-agent`
+          ssh-add ~/.ssh/$(params.sshPrivateKey)
+        fi
+
+        CHECKOUT_DIR="$(workspaces.output.path)/$(params.subdirectory)"
+
+        cleandir() {
+          # Delete any existing contents of the repo directory if it exists.
+          #
+          # We don't just "rm -rf $CHECKOUT_DIR" because $CHECKOUT_DIR might be "/"
+          # or the root of a mounted volume.
+          if [[ -d "$CHECKOUT_DIR" ]] ; then
+            # Delete non-hidden files and directories
+            rm -rf "$CHECKOUT_DIR"/*
+            # Delete files and directories starting with . but excluding ..
+            rm -rf "$CHECKOUT_DIR"/.[!.]*
+            # Delete files and directories starting with .. plus any other character
+            rm -rf "$CHECKOUT_DIR"/..?*
+          fi
+        }
+
+        if [[ "$(params.deleteExisting)" == "true" ]] ; then
+          cleandir
+        fi
+
+        test -z "$(params.httpProxy)" || export HTTP_PROXY=$(params.httpProxy)
+        test -z "$(params.httpsProxy)" || export HTTPS_PROXY=$(params.httpsProxy)
+        test -z "$(params.noProxy)" || export NO_PROXY=$(params.noProxy)
+
+        /ko-app/git-init \
+          -url "$(params.url)" \
+          -revision "$(params.revision)" \
+          -refspec "$(params.refspec)" \
+          -path "$CHECKOUT_DIR" \
+          -sslVerify="$(params.sslVerify)" \
+          -submodules="$(params.submodules)" \
+          -depth "$(params.depth)"
+        cd "$CHECKOUT_DIR"
+        RESULT_SHA="$(git rev-parse HEAD)"
+        EXIT_CODE="$?"
+        if [ "$EXIT_CODE" != 0 ] ; then
+          exit $EXIT_CODE
+        fi
+        # ensure we don't add a trailing newline to the result
+        echo -n "$RESULT_SHA" > $(results.commit.path)
+        echo -n "$(params.url)" > $(results.url.path)
+    workspaces:
+    - description: The git repo will be cloned onto the volume backing this workspace
+      name: output
+- apiVersion: tekton.dev/v1beta1
+  kind: Task
+  metadata:
+    name: resolve-props
+  spec:
+    params:
+    - name: is-source-directory
+      type: string
+    results:
+    - description: ""
+      name: is-application-names
+    - description: ""
+      name: release-name
+    - description: ""
+      name: is-configuration-keystore
+    - description: ""
+      name: is-configuration-truststore
+    - description: ""
+      name: is-configuration-setdbparms
+    - description: ""
+      name: is-configuration-serverconf
+    - description: ""
+      name: is-configuration-policyproject
+    - description: ""
+      name: is-configuration-loopbackdatasource
+    - description: ""
+      name: mq-queue-name
+    - description: ""
+      name: mq-end-point-policy-file
+    - description: ""
+      name: registry-host
+    - description: ""
+      name: previous-is-genenration
+    - description: ""
+      name: previous-deployment-revision
+    - description: ""
+      name: endpoint-path
+    - name: is-configurations
+    steps:
+    - image: image-registry.openshift-image-registry.svc:5000/ace/yq-zip
+      name: parse-source-properties
+      resources: {}
+      script: |
+        #!/bin/bash
+
+        set -ex
+
+        properties_yaml_path=$(workspaces.input.path)/$(params.is-source-directory)/pipeline_properties.yaml
+
+        if [[ ! -e $properties_yaml_path ]]; then
+          echo "no pipeline property file found"
+          exit 0
+        fi
+
+        resolve_props() {
+          exp=$1
+          result_path=$2
+
+          echo -n `yq e "$exp // [] | join (\" \")" $properties_yaml_path` > $result_path
+        }
+
+        resolve_prop() {
+          exp=$1
+          result_path=$2
+
+          echo -n `yq e "$exp // \"\" " $properties_yaml_path` > $result_path
+        }
+
+        resolve_props '.integrationServer.applicationNames' $(results.is-application-names.path)
+        resolve_prop '.integrationServer.releaseName' $(results.release-name.path)
+        
+        resolve_props '.integrationServer.configurations.keystore' $(results.is-configuration-keystore.path)
+        resolve_props '.integrationServer.configurations.truststore' $(results.is-configuration-truststore.path)
+        resolve_props '.integrationServer.configurations.setdbparms' $(results.is-configuration-setdbparms.path)
+        resolve_props '.integrationServer.configurations.serverconf' $(results.is-configuration-serverconf.path)
+        resolve_props '.integrationServer.configurations.policyproject' $(results.is-configuration-policyproject.path)
+        resolve_props '.integrationServer.configurations.loopbackdatasource' $(results.is-configuration-loopbackdatasource.path)
+
+        resolve_props '.integrationServer.configurations.*' $(results.is-configurations.path)
+
+        resolve_prop '.mq.queueName' $(results.mq-queue-name.path)
+        resolve_prop '.mq.endPointPolicyFile' $(results.mq-end-point-policy-file.path)
+    - image: quay.io/openshift/origin-cli:latest
+      name: resolve-ocp-properties
+      resources: {}
+      script: |2
+
+        release_name=$(cat $(results.release-name.path))
+        echo $release_name
+
+        set +e
+        previous_is_genenration=$(oc get integrationserver \
+                $release_name -o jsonpath='{.metadata.generation}' 2>/dev/null)
+        set +e
+
+        echo -n $previous_is_genenration > $(results.previous-is-genenration.path)
+
+        if [[ ! -z $previous_is_genenration ]]; then
+          oc get deployment \
+                -l app.kubernetes.io/instance=$release_name \
+                -o jsonpath='{$.items[0].metadata.annotations.deployment\.kubernetes\.io/revision}' 2>/dev/null > $(results.previous-deployment-revision.path)
+        else
+          touch $(results.previous-deployment-revision.path)
+        fi
+
+        echo -n $(oc registry info) > $(results.registry-host.path)
+    workspaces:
+    - name: input
+kind: List
+metadata:
+  resourceVersion: ""
+  selfLink: ""

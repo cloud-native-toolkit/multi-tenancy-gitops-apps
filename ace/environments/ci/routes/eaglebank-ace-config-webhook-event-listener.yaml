@@ -1,0 +1,14 @@
+kind: Route
+apiVersion: route.openshift.io/v1
+metadata:
+  name: eaglebank-ace-config-webhook-event-listener
+spec:
+  to:
+    kind: Service
+    name: el-ace-config
+  port:
+    targetPort: http-listener
+  tls:
+    termination: edge
+  wildcardPolicy: None
+

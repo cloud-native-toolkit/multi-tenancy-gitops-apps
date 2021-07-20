@@ -1,0 +1,82 @@
+apiVersion: tekton.dev/v1beta1
+kind: Task
+metadata:
+  name: ibm-jmeter-performance-test
+  annotations:
+    description: Executes a JMeter Test from a GIT repo (preview)
+    app.openshift.io/description: Executes a JMeter Test from a GIT repo (preview)
+    app.openshift.io/vcs-uri: https://github.com/IBM/ibm-garage-tekton-tasks
+    app.openshift.io/vcs-ref: master
+  labels:
+    version: 0.0.0
+spec:
+  params:
+    - name: is-source-directory
+      type: string
+    - default: ibm-client.jks
+      name: key-certs-secret-name
+      type: string
+    - name: test-plan
+      default: jmeter_test_plan/createCustomer_ace_testplan.jmx
+    - name: jmeter-users
+      default: "5"
+  steps:
+    - name: jmeter-it
+      env:
+      - name: KEYSTORE_PASSWORD
+        valueFrom:
+          secretKeyRef:
+            key: keyStorePassword
+            name: ibm-client.jks
+            optional: true
+      image: image-registry.openshift-image-registry.svc:5000/tools/jmeter-11
+      script: |
+        #!/usr/bin/env bash
+
+        set -xv
+
+        # note: the export does not like the - sign
+        echo "export jmeter_users=$(echo $(params.jmeter-users))" > /tmp/jmeter.env
+
+        source /tmp/jmeter.env
+
+        ${JMETER_BIN}/jmeter.sh \
+          -Djavax.net.ssl.keyStoreType=jks \
+          -Djavax.net.ssl.keyStore=/client-certs/ibm-client.jks \
+          -Djavax.net.ssl.keyStorePassword=${KEYSTORE_PASSWORD} \
+          -n -t $(workspaces.workspace.path)/$(params.is-source-directory)/$(params.test-plan) \
+          -Jjmeter_users=$jmeter_users \
+          -l /tmp/report.jtl
+
+        cat /tmp/report.jtl
+
+        echo "checking for the existance of errors .."
+
+        LINES=$(grep false /tmp/report.jtl | wc -l)
+        TOTAL_LINES=$(cat /tmp/report.jtl | wc -l)
+
+        if [ $LINES -eq 0 ] ; then
+          echo "no errors in jmeter test -> ready to promote the code"
+          exit 0
+        else
+          echo "oops, errors were found."
+          exit 1
+        fi
+
+      volumeMounts:
+      - mountPath: /shared
+        name: shared-volume
+      - mountPath: /client-certs
+        name: certs
+        readOnly: true
+  volumes:
+  - emptyDir: {}
+    name: shared-volume
+  - name: certs
+    secret:
+      items:
+        - key: keyStore
+          path: ibm-client.jks
+      secretName: $(params.key-certs-secret-name)
+  workspaces:
+  - name: workspace

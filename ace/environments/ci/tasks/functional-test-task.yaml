@@ -1,0 +1,183 @@
+apiVersion: tekton.dev/v1beta1
+kind: Task
+metadata:
+  annotations:
+  name: functional-test
+spec:
+  params:
+  - name: release-name
+    type: string
+  - name: is-source-directory
+    type: string
+  - name: key-certs-secret-name
+    type: string
+  - name: client-key
+    type: string
+  - name: client-cert
+    type: string
+  - name: ca-cert
+    type: string
+  - name: endpoint-path
+    type: string
+  - name: source-env
+  steps:
+  - name: wait-till-deployment
+    image: quay.io/openshift/origin-cli:latest
+    env:
+      - name: RELEASE_NAME
+        value: $(params.release-name)
+    script: |
+      set -e
+
+      SLEEP_TIME_SEC=10
+      RETRIES=20
+
+      wait_until() {
+        condition=$1
+        message=$2
+
+        retries=$RETRIES
+        until $condition || [[ "$retries" -eq 0 ]]; do
+          retries=$((retries - 1))
+
+          sleep $SLEEP_TIME_SEC
+        done
+
+        if [[ "$retries" -eq 0 ]]; then
+          echo $message
+          exit 1
+        fi
+      }
+
+      resolve_deployment() {
+        deployment=$(oc -n $(params.source-env) get deploy -l app.kubernetes.io/instance=$RELEASE_NAME -o jsonpath='{$.items[0].metadata.name}' 2>/dev/null) 
+      }
+
+      replicas_are_updated() {
+        local replicas=$(oc -n $(params.source-env) get deploy -l app.kubernetes.io/instance=$RELEASE_NAME -o jsonpath='{$.items[0].status.replicas}')
+        test $replicas -eq 1
+      }
+
+      desired_replicas_same_as_actual_replicas() {
+        local desired_replicas=$1
+
+        test $desired_replicas -eq $(oc -n $(params.source-env) get pods --no-headers -l app.kubernetes.io/instance=$RELEASE_NAME | wc -l)
+      }
+
+      oc -n $(params.source-env) get deploy
+      
+      wait_until resolve_deployment "Could not find deployment"
+      oc -n $(params.source-env) rollout status deployment $deployment
+
+      desired_replicas=$(oc -n $(params.source-env) get deploy -l app.kubernetes.io/instance=$RELEASE_NAME -o jsonpath='{$.items[0].spec.replicas}')
+      wait_until "desired_replicas_same_as_actual_replicas $desired_replicas" "Numner of pods does not match desired replicas"
+  - name: resolve-route
+    env:
+    - name: BASIC_AUTH_USERNAME
+      valueFrom:
+        secretKeyRef:
+          key: username
+          name: basic-auth-rest
+    - name: BASIC_AUTH_PASSWORD
+      valueFrom:
+        secretKeyRef:
+          key: password
+          name: basic-auth-rest
+    image: quay.io/openshift/origin-cli:latest
+    script: |
+      #!/bin/bash
+
+      set -e
+
+      SLEEP_TIME_SEC=10
+      RETRIES=20
+
+      wait_until() {
+        condition=$1
+        message=$2
+
+        retries=$RETRIES
+        until $condition || [[ "$retries" -eq 0 ]]; do
+          retries=$((retries - 1))
+
+          sleep $SLEEP_TIME_SEC
+        done
+
+        if [[ "$retries" -eq 0 ]]; then
+          echo $message
+          exit 1
+        fi
+      }
+
+      url_is_ready() {
+        url=$1
+        curl -s \
+          -u $BASIC_AUTH_USERNAME:$BASIC_AUTH_PASSWORD \
+          --request OPTIONS \
+          --cacert /client-certs/$(params.ca-cert) \
+          --cert /client-certs/$(params.client-cert) \
+          --key /client-certs/$(params.client-key) \
+          https://$url 2>/dev/null
+      }
+
+      route=$(oc -n $(params.source-env) get routes -l app.kubernetes.io/instance=$(params.release-name) -o jsonpath='{.items[?(@.spec.port.targetPort=="https")].spec.host}')
+      echo -n $route > /shared/route.txt
+
+      wait_until "url_is_ready $route/$(params.endpoint-path)" "Route is not set up"
+    volumeMounts:
+    - mountPath: /shared
+      name: shared-volume
+    - mountPath: /client-certs
+      name: certs
+      readOnly: true
+  - name: run-test
+    env:
+    - name: BASIC_AUTH_USERNAME
+      valueFrom:
+        secretKeyRef:
+          key: username
+          name: basic-auth-rest
+    - name: BASIC_AUTH_PASSWORD
+      valueFrom:
+        secretKeyRef:
+          key: password
+          name: basic-auth-rest
+    image: image-registry.openshift-image-registry.svc:5000/ace/newman
+    imagePullPolicy: Always
+    script: |
+      #!/bin/bash
+
+      set -ex
+
+      route=$(cat /shared/route.txt)
+
+      #route=create-customer-details-rest-https-dev.ace-prod-ref-6ccd7f378ae819553d37d5f2ee142bd6-0000.us-east.containers.appdomain.cloud
+
+      echo $route
+
+      test_file=$(workspaces.workspace.path)/$(params.is-source-directory)/test/newman/test.json
+      if [[ -e $test_file ]]; then
+        newman run \
+          --ssl-extra-ca-certs /client-certs/$(params.ca-cert) \
+          --ssl-client-key /client-certs/$(params.client-key) \
+          --ssl-client-cert /client-certs/$(params.client-cert) \
+          --env-var username=$BASIC_AUTH_USERNAME \
+          --env-var password=$BASIC_AUTH_PASSWORD \
+          --env-var host=$route \
+          $test_file
+
+      fi
+    volumeMounts:
+    - mountPath: /shared
+      name: shared-volume
+    - mountPath: /client-certs
+      name: certs
+      readOnly: true
+  volumes:
+  - emptyDir: {}
+    name: shared-volume
+  - name: certs
+    secret:
+      secretName: $(params.key-certs-secret-name)
+  workspaces:
+  - name: workspace

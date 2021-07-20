@@ -1,0 +1,11 @@
+apiVersion: triggers.tekton.dev/v1alpha1
+kind: EventListener
+metadata:
+  name: ace-config
+spec:
+  serviceAccountName: pipeline
+  triggers:
+    - bindings:
+        - ref: ace-config
+      template:
+        name: ace-config

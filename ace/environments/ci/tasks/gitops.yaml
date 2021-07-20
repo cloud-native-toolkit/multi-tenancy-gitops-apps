@@ -1,0 +1,178 @@
+apiVersion: tekton.dev/v1beta1
+kind: Task
+metadata:
+  name: git-ops
+spec:
+  params:
+    - name: url
+      description: git url to clone
+      type: string
+    - name: revision
+      description: git revision to checkout (branch, tag, sha, ref…)
+      type: string
+      default: ""
+    - name: sslVerify
+      description: defines if http.sslVerify should be set to true or false in the global git config
+      type: string
+      default: "true"
+    - name: submodules
+      description: defines if the resource should initialize and fetch the submodules
+      type: string
+      default: "true"
+    - name: depth
+      description: performs a shallow clone where only the most recent commit(s) will be fetched
+      type: string
+      default: "1"
+    - name: gitInitImage
+      description: the image used where the git-init binary is
+      type: string
+      default: "gcr.io/tekton-releases/github.com/tektoncd/pipeline/cmd/git-init:v0.18.0"
+    - name: sshPrivateKey
+      description: the private key to use
+      type: string
+      default: ""
+    - name: filelist
+      description: list of files to copy to gitOps repo
+      type: string
+    - name: parent-directory-relative-to-workspace
+      description: parent directory of the files to copy, relative to shared workspace
+      type: string
+    - name: destination-directory
+      description: parent directory where the files are to be copied, relative to the workspace
+    - name: kustomization-path
+      description: path to kustomization.yaml, relative to the git workspace
+  steps:
+    - name: git-clone
+      image: $(params.gitInitImage)
+      volumeMounts:
+        - name: local-workspace
+          mountPath: /local-workspace
+      script: |
+        #!/bin/sh
+        set -eu -o pipefail
+
+        if [[ "$(params.sshPrivateKey)" != "" ]] ; then
+          eval `ssh-agent`
+          ssh-add ~/.ssh/$(params.sshPrivateKey)
+        fi
+
+        CHECKOUT_DIR="/local-workspace/git-workspace"
+
+        mkdir -p ${CHECKOUT_DIR}
+
+        /ko-app/git-init \
+          -url "$(params.url)" \
+          -revision "$(params.revision)" \
+          -path "$CHECKOUT_DIR" \
+          -sslVerify="$(params.sslVerify)" \
+          -submodules="$(params.submodules)" \
+          -depth "$(params.depth)"
+
+        cd "$CHECKOUT_DIR"
+        git rev-parse HEAD
+        EXIT_CODE="$?"
+        if [ "$EXIT_CODE" != 0 ] ; then
+          exit $EXIT_CODE
+        fi
+    - name: copy-files
+      volumeMounts:
+        - name: local-workspace
+          mountPath: /local-workspace
+      image: ubuntu
+      script: |
+        DESTINATION_DIRECTORY=/local-workspace/git-workspace/$(params.destination-directory)
+        SOURCE_DIRECTORY=$(workspaces.shared-workspace.path)/$(params.parent-directory-relative-to-workspace)
+
+        ls -R ${DESTINATION_DIRECTORY}
+
+        KUSTOMIZATION_PARENT_DIRECTORY=$(dirname /local-workspace/git-workspace/$(params.kustomization-path))
+        ITEM_LIST_PATH=/local-workspace/kustomization_items.txt
+
+        for file in $(params.filelist); do
+          cp -f ${SOURCE_DIRECTORY}/$file ${DESTINATION_DIRECTORY}/$file
+          realpath ${DESTINATION_DIRECTORY}/$file --relative-to ${KUSTOMIZATION_PARENT_DIRECTORY} >> ${ITEM_LIST_PATH}
+        done
+
+        ls -R ${DESTINATION_DIRECTORY}
+    - name: update-kustomization
+      volumeMounts:
+        - name: local-workspace
+          mountPath: /local-workspace
+      image: image-registry.openshift-image-registry.svc:5000/ace/yq-zip
+      args:
+        - /local-workspace/kustomization_items.txt
+        - /local-workspace/git-workspace/$(params.kustomization-path)
+      script: |-
+        #!/bin/bash
+
+        function update_kustomization_from_file() {
+          item_list_file_path=$1
+          kustomization_file_path=$2
+
+          items=$(cat $item_list_file_path)
+
+          for item in ${items[*]}; do
+            update_kustomization $item $kustomization_file_path
+          done
+        }
+
+        function update_kustomization() {
+          item=$1
+          kustomization_file_path=$2
+
+          contains=$(config=$item yq e '.resources[] | select(. == env(config))' $kustomization_file_path)
+
+          if [[ -z $contains ]]; then
+            config=$item yq e -i '.resources = (.resources // []) + env(config)' \
+              $kustomization_file_path
+
+            prettyfy $kustomization_file_path
+          fi
+        }
+
+        function prettyfy() {
+          file=$1
+
+          yq e --prettyPrint $file >/tmp/temp.yaml
+          mv /tmp/temp.yaml $file
+        }
+
+        if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
+          item_list_file_path=$1
+          kustomization_file_path=$2
+
+          update_kustomization_from_file $item_list_file_path $kustomization_file_path
+        fi
+    - name: git-push
+      image: $(params.gitInitImage)
+      volumeMounts:
+        - name: local-workspace
+          mountPath: /local-workspace
+      script: |
+        cat /local-workspace/git-workspace/$(params.kustomization-path)
+
+        if [[ "$(params.sshPrivateKey)" != "" ]] ; then
+          eval `ssh-agent`
+          ssh-add ~/.ssh/$(params.sshPrivateKey)
+        fi
+
+        CHECKOUT_DIR="/local-workspace/git-workspace"
+
+        cd ${CHECKOUT_DIR}
+
+        git checkout -b master
+
+        git config user.email "test@example.com"
+        git config user.name "test user"
+
+        git add /local-workspace/git-workspace/$(params.destination-directory)
+        git add /local-workspace/git-workspace/$(params.kustomization-path)
+
+        git commit -m "Commit some files"
+
+        git push origin master
+  volumes:
+    - name: local-workspace
+      emptyDir: {}
+  workspaces:
+    - name: shared-workspace

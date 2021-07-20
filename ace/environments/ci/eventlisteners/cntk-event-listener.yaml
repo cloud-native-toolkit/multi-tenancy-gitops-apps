@@ -1,0 +1,21 @@
+apiVersion: triggers.tekton.dev/v1alpha1
+kind: EventListener
+metadata:
+  labels:
+    app: cnkt-event-listener
+    foo: bar
+  name: cnkt-event-listener
+  annotations:
+    foo: bar
+spec:
+  serviceAccountName: pipeline
+  triggers:
+  - bindings:
+    - kind: TriggerBinding
+      ref: cnkt-trigger-binding
+    interceptors:
+    - cel:
+        filter: header.match('X-GitHub-Event', 'push') && body.ref == 'refs/heads/main' && body.repository.full_name == 'csantanapr-cn-toolkit-tests/inventory-mgmt-ace-solution'
+    name: cntk-ace-app-master
+    template:
+      name: cntk-ace-template

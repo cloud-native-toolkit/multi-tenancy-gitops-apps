@@ -1,0 +1,14 @@
+kind: Route
+apiVersion: route.openshift.io/v1
+metadata:
+  name: cntk-webhook-event-listener-route
+spec:
+  to:
+    kind: Service
+    name: el-cnkt-event-listener
+  port:
+    targetPort: http-listener
+  tls:
+    termination: edge
+  wildcardPolicy: None
+

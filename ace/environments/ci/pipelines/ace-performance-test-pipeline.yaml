@@ -1,0 +1,90 @@
+apiVersion: tekton.dev/v1beta1
+kind: Pipeline
+metadata:
+  name: ace-performance-test
+  annotations:
+    app.openshift.io/runtime: test
+spec:
+  params:
+    - default: git@github.ibm.com:cpat-int-samples/createCustomer_REST_V1.git
+      name: is-source-repo-url
+      type: string
+    - default: is-source
+      name: is-source-directory
+      type: string
+    - default: id_create-customer-rest-v1
+      name: is-source-repo-private-key
+      type: string
+    - default: ibm-client.jks
+      name: key-certs-secret-name
+      type: string
+    - description: Points to the dev/staging env
+      name: source-env
+      type: string
+    - description: Points to the staging/prod env
+      name: destination-env
+      type: string
+    - description: User Load
+      name: jmeter-users
+      type: string
+  tasks:
+    - name: clone-is-source
+      params:
+      - name: url
+        value: $(params.is-source-repo-url)
+      - name: subdirectory
+        value: $(params.is-source-directory)
+      - name: deleteExisting
+        value: "true"
+      - name: sshPrivateKey
+        value: $(params.is-source-repo-private-key)
+      taskRef:
+        kind: Task
+        name: git-clone
+      workspaces:
+      - name: output
+        workspace: shared-workspace
+
+    - name: resolve-props
+      params:
+      - name: is-source-directory
+        value: $(params.is-source-directory)
+      runAfter:
+      - clone-is-source
+      taskRef:
+        kind: Task
+        name: resolve-props
+      workspaces:
+      - name: input
+        workspace: shared-workspace
+
+    - name: performance-testing
+      taskRef:
+        name: ibm-jmeter-performance-test
+      runAfter:
+        - resolve-props
+      params:
+        - name: is-source-directory
+          value: $(params.is-source-directory)
+        - name: key-certs-secret-name
+          value: $(params.key-certs-secret-name)
+        - name: jmeter-users
+          value: $(params.jmeter-users)
+      workspaces:
+      - name: workspace
+        workspace: shared-workspace
+
+    - name: gitops-for-ace
+      params:
+      - name: source-env
+        value: $(params.source-env)
+      - name: destination-env
+        value: $(params.destination-env)
+      runAfter:
+      - performance-testing
+      taskRef:
+        kind: Task
+        name: ibm-gitops-for-ace
+
+  workspaces:
+  - name: shared-workspace

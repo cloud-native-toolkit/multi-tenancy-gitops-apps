@@ -1,0 +1,173 @@
+apiVersion: tekton.dev/v1beta1
+kind: Pipeline
+metadata:
+  name: ace-bar
+
+spec:
+  params:
+  
+  - name: is-source-repo-url
+    type: string
+  - default: is-source
+    name: is-source-directory
+    type: string
+  - name: is-source-repo-private-key
+    type: string
+  
+  - name: is-infra-repo-url
+    type: string
+  - default: is-infra
+    name: is-infra-directory
+    type: string
+  - name: is-infra-repo-private-key
+    type: string
+
+  - default: Dockerfile
+    name: dockerfile-relative-path-to-infra
+    type: string
+
+  - name: git-ops-repo-url
+    type: string
+  - name: git-ops-repo-private-key
+    type: string
+  - name: git-ops-parent-directory-relative-to-workspace
+    type: string
+  - name: git-ops-destination-directory
+    type: string
+  - name: git-ops-kustomization-path
+    type: string
+  
+  tasks:
+  
+  - name: clone-is-source
+    params:
+    - name: url
+      value: $(params.is-source-repo-url)
+    - name: subdirectory
+      value: $(params.is-source-directory)
+    - name: deleteExisting
+      value: "true"
+    - name: sshPrivateKey
+      value: $(params.is-source-repo-private-key)
+    taskRef:
+      kind: Task
+      name: git-clone
+    workspaces:
+    - name: output
+      workspace: shared-workspace
+  
+  - name: clone-is-infra
+    params:
+    - name: url
+      value: $(params.is-infra-repo-url)
+    - name: subdirectory
+      value: $(params.is-infra-directory)
+    - name: deleteExisting
+      value: "true"
+    - name: sshPrivateKey
+      value: $(params.is-infra-repo-private-key)
+    taskRef:
+      kind: Task
+      name: git-clone
+    workspaces:
+    - name: output
+      workspace: shared-workspace
+  
+  - name: resolve-props
+    params:
+    - name: is-source-directory
+      value: $(params.is-source-directory)
+    runAfter:
+    - clone-is-source
+    taskRef:
+      kind: Task
+      name: resolve-props
+    workspaces:
+    - name: input
+      workspace: shared-workspace
+  
+  - name: generate-bar
+    params:
+    - name: is-source-directory
+      value: $(params.is-source-directory)
+    - name: is-application-names
+      value: $(tasks.resolve-props.results.is-application-names)
+    - name: bar-location
+      value: $(workspaces.workspace.path)/bars
+    - name: bar-filename
+      value: $(tasks.resolve-props.results.release-name).bar
+    runAfter:
+    - resolve-props
+    taskRef:
+      kind: Task
+      name: generate-bar
+    workspaces:
+    - name: workspace
+      workspace: shared-workspace
+  
+  - name: build-is-image
+    params:
+    - name: TLSVERIFY
+      value: "false"
+    - name: IMAGE
+      value: $(tasks.resolve-props.results.registry-host)/$(context.pipelineRun.namespace)/$(tasks.resolve-props.results.release-name):$(tasks.clone-is-source.results.commit)
+    - name: DOCKERFILE
+      value: $(workspaces.source.path)/$(params.is-infra-directory)/$(params.dockerfile-relative-path-to-infra)
+    - name: CONTEXT
+      value: $(workspaces.source.path)/bars
+    runAfter:
+    - generate-bar
+    - clone-is-infra
+    taskRef:
+      kind: ClusterTask
+      name: buildah
+    workspaces:
+    - name: source
+      workspace: shared-workspace
+  
+  - name: create-is
+    taskRef:
+      kind: Task
+      name: create-is
+    params:
+      - name: is-infra-directory
+        value: $(params.is-infra-directory)
+      - name: IMAGE
+        value: $(tasks.resolve-props.results.registry-host)/$(context.pipelineRun.namespace)/$(tasks.resolve-props.results.release-name):$(tasks.clone-is-source.results.commit)
+      - name: release-name
+        value: $(tasks.resolve-props.results.release-name)
+      - name: configurations
+        value: $(tasks.resolve-props.results.is-configurations)
+    runAfter:
+      - build-is-image
+    workspaces:
+      - name: input
+        workspace: shared-workspace
+  
+  - name: git-ops
+    taskRef:
+      kind: Task
+      name: git-ops
+    params:
+      - name: url
+        value: $(params.git-ops-repo-url)
+      - name: revision
+        value: master
+      - name: sshPrivateKey
+        value: $(params.git-ops-repo-private-key)
+      - name: kustomization-path
+        value: $(params.git-ops-kustomization-path)
+      - name: filelist
+        value: IntegrationServer.yaml
+      - name: parent-directory-relative-to-workspace
+        value: $(params.git-ops-parent-directory-relative-to-workspace)
+      - name: destination-directory
+        value: $(params.git-ops-destination-directory)
+    runAfter:
+    - create-is
+    workspaces:
+    - name: shared-workspace
+      workspace: shared-workspace
+
+  workspaces:
+  - name: shared-workspace
