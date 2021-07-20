@@ -8,7 +8,7 @@ metadata:
     - resources-finalizer.argocd.argoproj.io
 spec:
   destination:
-    namespace: soapserver
+    namespace: tools
     server: https://kubernetes.default.svc
   project: applications
   source:
