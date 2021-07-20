@@ -1,0 +1,12 @@
+apiVersion: cpd.ibm.com/v1
+kind: Ibmcpd
+metadata:
+  name: ibmcpd-cr                              
+  namespace: cpd-instance                           
+spec:
+  license:
+    accept: true
+    license: Enterprise
+  storageClass: ocs-storagecluster-cephfs
+  zenCoreMetadbStorageClass: ocs-storagecluster-ceph-rbd
+  version: "4.0.1"
