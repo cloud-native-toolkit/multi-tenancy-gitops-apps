@@ -5,9 +5,9 @@ metadata:
 data:
   branch: master
   host: github.com
-  org: vgadepal
-  owner: vgadepal
+  org: cloud-native-toolkit-demos
+  owner: cloud-native-toolkit-demos
   parentdir: .
   protocol: https
-  repo: multi-tenancy-gitops
-  url: https://github.com/vgadepal/multi-tenancy-gitops.git
+  repo: multi-tenancy-gitops-apps
+  url: https://github.com/cloud-native-toolkit-demos/multi-tenancy-gitops-apps.git

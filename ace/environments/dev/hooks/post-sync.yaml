@@ -21,7 +21,7 @@ spec:
           - start 
           - ace-functional-test
           - --param
-          - is-source-repo-url=git@github.ibm.com:cpat-int-samples/createCustomer_REST_V1.git
+          - is-source-repo-url=git@github.com:cloud-native-toolkit-demos/ace-customer-details.git
           - --param 
           - is-source-repo-private-key=id_create-customer-rest-v1
           - --param
