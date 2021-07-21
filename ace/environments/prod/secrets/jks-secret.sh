@@ -1,8 +1,7 @@
 #!/usr/bin/env bash
 
 # Set variables
-CERT_PATH=/Users/hollisc/Documents/GTM-Asset-Architecture/gh-repos/cloud-native-toolkit-demos/ACE-Certs/certs
-#<CERT-PATH>
+CERT_PATH=<CERT-PATH>
 SEALEDSECRET_NAMESPACE=sealed-secrets
 
 # Create Kubernetes Secret yaml
