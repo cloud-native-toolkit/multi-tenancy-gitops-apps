@@ -2,6 +2,5 @@ apiVersion: operator.ibm.com/v1alpha1
 kind: OperandRequest
 metadata:
   name: empty-request
-  namespace: cpd-instance
 spec:
   requests: []
