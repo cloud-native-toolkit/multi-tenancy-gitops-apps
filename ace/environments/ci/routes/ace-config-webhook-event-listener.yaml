@@ -1,7 +1,7 @@
 kind: Route
 apiVersion: route.openshift.io/v1
 metadata:
-  name: eaglebank-ace-config-webhook-event-listener
+  name: ace-config-webhook-event-listener
 spec:
   to:
     kind: Service
