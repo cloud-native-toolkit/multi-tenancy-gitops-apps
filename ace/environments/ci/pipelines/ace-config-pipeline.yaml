@@ -6,6 +6,7 @@ spec:
   params:
   - name: is-source-repo-url
     type: string
+    default: https://github.com/cloud-native-toolkit-demos/ace-customer-details.git
   - default: is-source
     name: is-source-directory
     type: string
@@ -13,6 +14,7 @@ spec:
     type: string
   - name: is-infra-repo-url
     type: string
+    default: https://github.com/cloud-native-toolkit-demos/ace-infra.git
   - default: is-infra
     name: is-infra-directory
     type: string
@@ -20,6 +22,7 @@ spec:
     type: string
   - name: is-config-repo-url
     type: string
+    default: https://github.com/cloud-native-toolkit-demos/ace-config.git
   - default: is-config
     name: is-config-directory
     type: string

@@ -6,7 +6,7 @@ metadata:
     app.openshift.io/runtime: test
 spec:
   params:
-    - default: git@github.ibm.com:cpat-int-samples/createCustomer_REST_V1.git
+    - default: https://github.com/cloud-native-toolkit-demos/ace-customer-details.git
       name: is-source-repo-url
       type: string
     - default: is-source

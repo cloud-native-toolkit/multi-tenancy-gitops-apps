@@ -8,6 +8,7 @@ spec:
   
   - name: is-source-repo-url
     type: string
+    default: https://github.com/cloud-native-toolkit-demos/ace-customer-details.git
   - default: is-source
     name: is-source-directory
     type: string
@@ -16,6 +17,7 @@ spec:
   
   - name: is-infra-repo-url
     type: string
+    default: https://github.com/cloud-native-toolkit-demos/ace-infra.git
   - default: is-infra
     name: is-infra-directory
     type: string
