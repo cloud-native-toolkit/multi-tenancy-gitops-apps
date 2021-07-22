@@ -23,7 +23,7 @@ spec:
           - --param
           - is-source-repo-url=git@github.com:cloud-native-toolkit-demos/ace-customer-details.git
           - --param 
-          - is-source-repo-private-key=id_create-customer-rest-v1
+          - is-source-repo-private-key=""
           - --param
           - source-env=dev
           - --param
