@@ -1,0 +1,31 @@
+kind: ClusterRole
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: custom-pipelines-clusterrole
+rules:
+  - verbs:
+      - '*'
+    apiGroups:
+      - tekton.dev
+    resources:
+      - pipelines
+      - pipelineruns
+      - tasks
+      - taskruns
+      - pipelineresources
+  - verbs:
+      - '*'
+    apiGroups:
+      - apps
+    resources:
+      - daemonsets
+      - deployments
+      - replicasets
+      - statefulsets
+  - verbs:
+      - '*'
+    apiGroups:
+      - ''
+    resources:
+      - pods
+      - services
