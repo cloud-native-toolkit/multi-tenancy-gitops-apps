@@ -98,7 +98,7 @@ spec:
       volumeMounts:
         - name: local-workspace
           mountPath: /local-workspace
-      image: quay.io/ibmgaragecloud/cli-tools:v0.15
+      image: quay.io/hollisc/yq-zip
       args:
         - /local-workspace/kustomization_items.txt
         - /local-workspace/git-workspace/$(params.kustomization-path)

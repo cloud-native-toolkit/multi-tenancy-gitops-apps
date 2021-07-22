@@ -45,7 +45,7 @@ items:
         value: $(params.is-configuration-loopbackdatasource)
       - name: WORKSPACE_PATH
         value: $(workspaces.workspace.path)
-      image: quay.io/ibmgaragecloud/cli-tools:v0.15
+      image: quay.io/hollisc/yq-zip
       name: setup-configuration
       resources: {}
       script: |
@@ -152,7 +152,7 @@ items:
     - name: configurations
       type: string
     steps:
-    - image: quay.io/ibmgaragecloud/cli-tools:v0.15
+    - image: quay.io/hollisc/yq-zip
       name: setup-custom-resource
       resources: {}
       script: |
@@ -189,7 +189,7 @@ items:
     - name: bar-filename
       type: string
     steps:
-    - image: image-registry.openshift-image-registry.svc:5000/ace/mqsicreatebar
+    - image: quay.io/hollisc/mqsicreatebar
       name: generate-bar
       resources: {}
       script: |
@@ -374,7 +374,7 @@ items:
       name: endpoint-path
     - name: is-configurations
     steps:
-    - image: quay.io/ibmgaragecloud/cli-tools:v0.15
+    - image: quay.io/hollisc/yq-zip
       name: parse-source-properties
       resources: {}
       script: |
