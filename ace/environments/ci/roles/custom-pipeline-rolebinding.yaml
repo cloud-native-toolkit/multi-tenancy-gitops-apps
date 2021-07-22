@@ -3,9 +3,9 @@ apiVersion: rbac.authorization.k8s.io/v1
 metadata:
   name: custom-pipelines-rolebinding
 subjects:
-  - kind: Group
-    apiGroup: rbac.authorization.k8s.io
-    name: 'system:serviceaccounts:ci'
+  - kind: ServiceAccount
+    name: pipeline
+    namespace: ci
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole
