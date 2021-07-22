@@ -19,9 +19,9 @@ spec:
           - ci
           - pipeline
           - start
-          - ace-performance-test
+          - ace-promote-stage-prod
           - --param
-          - is-source-repo-url=git@github.com:cloud-native-toolkit-demos/ace-customer-details.git
+          - is-source-repo-url=https://github.com/cloud-native-toolkit-demos/ace-customer-details.git
           - --param
           - is-source-repo-private-key=""
           - --param
