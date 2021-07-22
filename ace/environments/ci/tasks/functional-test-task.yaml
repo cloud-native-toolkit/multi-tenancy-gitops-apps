@@ -125,7 +125,7 @@ spec:
       echo $route
       echo $(params.source-env)
 
-      wait_until "url_is_ready $route/$(params.endpoint-path)" "Route is not set up"
+      wait_until "url_is_ready create-customer-details-rest-is.dev.svc:7843/$(params.endpoint-path)" "Route is not set up"
     volumeMounts:
     - mountPath: /shared
       name: shared-volume
