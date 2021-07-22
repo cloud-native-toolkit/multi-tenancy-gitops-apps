@@ -12,7 +12,7 @@ spec:
     type: string
   - name: is-source-repo-private-key
     type: string
-    default: git-credentials
+    default: ""
   - name: is-infra-repo-url
     type: string
     default: https://github.com/cloud-native-toolkit-demos/ace-infra.git
@@ -21,7 +21,7 @@ spec:
     type: string
   - name: is-infra-repo-private-key
     type: string
-    default: git-credentials
+    default: ""
   - name: is-config-repo-url
     type: string
     default: https://github.com/cloud-native-toolkit-demos/ace-config.git
@@ -30,14 +30,14 @@ spec:
     type: string
   - name: is-config-repo-private-key
     type: string
-    default: git-credentials
+    default: ""
 
   - name: git-ops-repo-url
     type: string
     default: https://github.com/cloud-native-toolkit-demos/multi-tenancy-gitops-apps.git
   - name: git-ops-repo-private-key
     type: string
-    default: git-credentials
+    default: ""
   - name: git-ops-parent-directory-relative-to-workspace
     type: string
     default: ace/environments/dev/kustomization.yaml

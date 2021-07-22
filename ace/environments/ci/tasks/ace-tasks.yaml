@@ -374,7 +374,7 @@ items:
       name: endpoint-path
     - name: is-configurations
     steps:
-    - image: image-registry.openshift-image-registry.svc:5000/ace/yq-zip
+    - image: quay.io/ibmgaragecloud/cli-tools:v0.15
       name: parse-source-properties
       resources: {}
       script: |
