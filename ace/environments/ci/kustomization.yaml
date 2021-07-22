@@ -12,11 +12,13 @@ resources:
 - pvc/ace-test-pvc.yaml
 - routes/ace-bar-webhook-event-listener.yaml
 - routes/ace-config-webhook-event-listener.yaml
+- secrets/basic-auth-rest-secret.yaml
 - secrets/git-credentials-secret.yaml
 - secrets/git-source-read-creds-secret.yaml
 - secrets/ibm-ace-server-jks-secret.yaml
 - secrets/ibm-ca-jks-secret.yaml
 - secrets/ibm-client-jks-secret.yaml
+- secrets/ibm-client-key-certs-secret.yaml
 - secrets/ibm-entitled-key-secret.yaml
 - tasks/0-setup.yaml
 - tasks/2-build-tag-push-ace-bar.yaml
