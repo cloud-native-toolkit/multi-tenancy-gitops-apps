@@ -122,6 +122,8 @@ spec:
 
       route=$(oc -n $(params.source-env) get routes -l app.kubernetes.io/instance=$(params.release-name) -o jsonpath='{.items[?(@.spec.port.targetPort=="https")].spec.host}')
       echo -n $route > /shared/route.txt
+      echo $route
+      echo $(params.source-env)
 
       wait_until "url_is_ready $route/$(params.endpoint-path)" "Route is not set up"
     volumeMounts:
