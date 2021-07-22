@@ -11,7 +11,7 @@ resources:
 - pvc/ace-rest-ws-pvc.yaml
 - pvc/ace-test-pvc.yaml
 - roles/custom-pipeline-clusterrole.yaml
-- roles/custom-pipeline-rolebinding.yaml
+- roles/custom-pipeline-clusterrolebinding.yaml
 - routes/ace-bar-webhook-event-listener.yaml
 - routes/ace-config-webhook-event-listener.yaml
 - secrets/basic-auth-rest-secret.yaml
