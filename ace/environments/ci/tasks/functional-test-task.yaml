@@ -142,7 +142,7 @@ spec:
         secretKeyRef:
           key: password
           name: basic-auth-rest
-    image: image-registry.openshift-image-registry.svc:5000/ace/newman
+    image: quay.io/hollisc/newman
     imagePullPolicy: Always
     script: |
       #!/bin/bash
