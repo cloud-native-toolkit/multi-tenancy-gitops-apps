@@ -165,5 +165,3 @@ spec:
   
   workspaces:
   - name: shared-workspace
-    persistentVolumeClaim:
-      claimName: ace-rest-ws
