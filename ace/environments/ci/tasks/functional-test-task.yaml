@@ -111,10 +111,9 @@ spec:
 
       url_is_ready() {
         url=$1
-        curl -s \
+        curl -s -k \
           -u $BASIC_AUTH_USERNAME:$BASIC_AUTH_PASSWORD \
           --request OPTIONS \
-          --cacert /client-certs/$(params.ca-cert) \
           --cert /client-certs/$(params.client-cert) \
           --key /client-certs/$(params.client-key) \
           https://$url 
@@ -122,10 +121,8 @@ spec:
 
       route=$(oc -n $(params.source-env) get routes -l app.kubernetes.io/instance=$(params.release-name) -o jsonpath='{.items[?(@.spec.port.targetPort=="https")].spec.host}')
       echo -n $route > /shared/route.txt
-      echo $route
-      echo $(params.source-env)
 
-      wait_until "url_is_ready create-customer-details-rest-is.dev.svc:7843/$(params.endpoint-path)" "Route is not set up"
+      wait_until "url_is_ready $route/$(params.endpoint-path)" "Route is not set up"
     volumeMounts:
     - mountPath: /shared
       name: shared-volume
@@ -159,8 +156,7 @@ spec:
 
       test_file=$(workspaces.workspace.path)/$(params.is-source-directory)/test/newman/test.json
       if [[ -e $test_file ]]; then
-        newman run \
-          --ssl-extra-ca-certs /client-certs/$(params.ca-cert) \
+        newman run -k \
           --ssl-client-key /client-certs/$(params.client-key) \
           --ssl-client-cert /client-certs/$(params.client-cert) \
           --env-var username=$BASIC_AUTH_USERNAME \
