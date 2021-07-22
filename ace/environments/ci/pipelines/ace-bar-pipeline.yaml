@@ -14,6 +14,7 @@ spec:
     type: string
   - name: is-source-repo-private-key
     type: string
+    default: '""'
   
   - name: is-infra-repo-url
     type: string
@@ -23,6 +24,7 @@ spec:
     type: string
   - name: is-infra-repo-private-key
     type: string
+    default: '""'
 
   - default: Dockerfile
     name: dockerfile-relative-path-to-infra
@@ -30,14 +32,21 @@ spec:
 
   - name: git-ops-repo-url
     type: string
+    default: https://github.com/cloud-native-toolkit-demos/multi-tenancy-gitops-apps.git
   - name: git-ops-repo-private-key
     type: string
+    default: '""'
   - name: git-ops-parent-directory-relative-to-workspace
     type: string
+    default: ace/environments/dev/integrationServer
+
   - name: git-ops-destination-directory
     type: string
+    default: integration_server
   - name: git-ops-kustomization-path
     type: string
+    default: ace/environments/dev/kustomization.yaml
+
   
   tasks:
   
