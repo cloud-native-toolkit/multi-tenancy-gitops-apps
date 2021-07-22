@@ -45,7 +45,7 @@ items:
         value: $(params.is-configuration-loopbackdatasource)
       - name: WORKSPACE_PATH
         value: $(workspaces.workspace.path)
-      image: image-registry.openshift-image-registry.svc:5000/ace/yq-zip
+      image: quay.io/ibmgaragecloud/cli-tools:v0.15
       name: setup-configuration
       resources: {}
       script: |
@@ -152,7 +152,7 @@ items:
     - name: configurations
       type: string
     steps:
-    - image: image-registry.openshift-image-registry.svc:5000/ace/yq-zip
+    - image: quay.io/ibmgaragecloud/cli-tools:v0.15
       name: setup-custom-resource
       resources: {}
       script: |
