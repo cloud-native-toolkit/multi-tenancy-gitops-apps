@@ -117,7 +117,7 @@ spec:
           --cacert /client-certs/$(params.ca-cert) \
           --cert /client-certs/$(params.client-cert) \
           --key /client-certs/$(params.client-key) \
-          https://$url 2>/dev/null
+          https://$url 
       }
 
       route=$(oc -n $(params.source-env) get routes -l app.kubernetes.io/instance=$(params.release-name) -o jsonpath='{.items[?(@.spec.port.targetPort=="https")].spec.host}')
