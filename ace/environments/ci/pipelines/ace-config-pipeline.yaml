@@ -40,11 +40,11 @@ spec:
     default: '""'
   - name: git-ops-parent-directory-relative-to-workspace
     type: string
-    default: ace/environments/dev/configurations
+    default: configurations
 
   - name: git-ops-destination-directory
     type: string
-    default: configurations
+    default: ace/environments/dev/configurations
   - name: git-ops-kustomization-path
     type: string
     default: ace/environments/dev/kustomization.yaml
