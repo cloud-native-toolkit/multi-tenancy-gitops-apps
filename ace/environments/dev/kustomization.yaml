@@ -10,3 +10,4 @@ resources:
   - configurations/ibm_ace_server_jks.yaml
   - configurations/ibm_ca_jks.yaml
   - configurations/ibm_rest_policy.yaml
+  - integrationServer/IntegrationServer.yaml
