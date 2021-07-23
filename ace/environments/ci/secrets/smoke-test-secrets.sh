@@ -7,7 +7,7 @@ SEALEDSECRET_NAMESPACE=sealed-secrets
 
 # Create Kubernetes Secret yaml
 oc create secret generic ibm-client.jks \
---from-literal=keyStorePassword=${USERNAME} \
+--from-literal=keyStorePassword=${KEYSTOREPASSWORD} \
 --from-file=keyStore=${CERT_PATH}/ibm-client.jks \
 --type Opaque \
 --dry-run=true -o yaml > delete-ibm-client-jks-secret.yaml 
