@@ -29,7 +29,7 @@ spec:
             key: keyStorePassword
             name: ibm-client.jks
             optional: true
-      image: image-registry.openshift-image-registry.svc:5000/tools/jmeter-11
+      image: quay.io/hollisc/jmeter-11
       script: |
         #!/usr/bin/env bash
 

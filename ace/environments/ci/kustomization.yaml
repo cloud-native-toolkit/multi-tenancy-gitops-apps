@@ -4,7 +4,7 @@ resources:
 - eventlisteners/ace-config-event-listener.yaml
 - pipelines/ace-promote-dev-stage-pipeline.yaml
 # Performance pipeline requires configuration of backend for JMeter
-#- pipelines/ace-promote-stage-prod-pipeline.yaml
+- pipelines/ace-promote-stage-prod-pipeline.yaml
 - pipelines/ace-bar-pipeline.yaml
 - pipelines/ace-config-pipeline.yaml
 - pvc/ace-bar-pvc.yaml
