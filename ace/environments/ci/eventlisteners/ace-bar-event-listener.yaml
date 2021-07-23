@@ -6,6 +6,7 @@ spec:
   serviceAccountName: pipeline
   triggers:
     - bindings:
-        - ref: ace-bar
+        - kind: TriggerBinding
+          ref: ace-bar
       template:
-        name: ace-bar
+        ref: ace-bar
