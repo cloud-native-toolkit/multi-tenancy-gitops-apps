@@ -35,6 +35,7 @@ resources:
 - tasks/12-argo-tests.yaml
 - tasks/gitops.yaml
 - tasks/ace-tasks.yaml
+- tasks/custom-buildah.yaml
 - tasks/functional-test-task.yaml
 - tasks/ibm-gitops-for-ace-task.yaml
 - tasks/ibm-jmeter-performance-test.yaml

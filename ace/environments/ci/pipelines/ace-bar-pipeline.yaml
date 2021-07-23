@@ -130,7 +130,7 @@ spec:
     - generate-bar
     - clone-is-infra
     taskRef:
-      kind: ClusterTask
+      kind: Task
       name: buildah
     workspaces:
     - name: source
