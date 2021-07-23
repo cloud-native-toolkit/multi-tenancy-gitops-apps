@@ -12,7 +12,7 @@ spec:
     - default: is-source
       name: is-source-directory
       type: string
-    - default: id_create-customer-rest-v1
+    - default: '""'
       name: is-source-repo-private-key
       type: string
     - default: ibm-client.jks
