@@ -31,19 +31,19 @@ spec:
     - default: quay.io/ibmgaragecloud/ibmcloud-dev:v2.0.4
       name: tools-image
       type: string
-    - default: 1-apps/instances
+    - default: ace/environments #1-apps/instances
       name: app-path
       type: string
-    - default: ace-app/config
+    - default: .
       name: ace-path
       type: string
-    - default: base
+    - default: .
       name: base-path
       type: string
     - default: integrationServer
       name: integrationServer-path
       type: string
-    - default: configuration
+    - default: configurations
       name: config-path
       type: string
     - default: ""
@@ -202,9 +202,9 @@ spec:
           local paths_to_copy=$1
           local item_list_path=$2
 
-          local env_pfx="${APP_PATH}/namespace"
-          local src_folder="${env_pfx}-${SRC_ENV}/${ACE_PATH}/${SRC_ENV}/${BASE_PATH}"
-          local dst_folder="${env_pfx}-${DST_ENV}/${ACE_PATH}/${DST_ENV}/${BASE_PATH}"
+          local env_pfx="${APP_PATH}"
+          local src_folder="${env_pfx}/${SRC_ENV}"
+          local dst_folder="${env_pfx}/${DST_ENV}"
           local kustomization_file_path=${dst_folder}/kustomization.yaml
 
           for path in ${paths_to_copy[*]}; do
@@ -254,8 +254,8 @@ spec:
         function update_kustomization() {
           local item=$1
 
-          local env_dir=${APP_PATH}/namespace-${DST_ENV}
-          local base_dir=${env_dir}/ace-app/config/${DST_ENV}/base
+          local env_dir=${APP_PATH}/${DST_ENV}
+          local base_dir=${env_dir}
           local kustomization_file_path=${base_dir}/kustomization.yaml
 
           local contains=$(config=$item yq e '.resources[] | select(. == env(config))' \
