@@ -41,6 +41,7 @@ spec:
         source /tmp/jmeter.env
 
         ${JMETER_BIN}/jmeter.sh \
+          -Jserver.rmi.ssl.disable=true \
           -Djavax.net.ssl.keyStoreType=jks \
           -Djavax.net.ssl.keyStore=/client-certs/ibm-client.jks \
           -Djavax.net.ssl.keyStorePassword=${KEYSTORE_PASSWORD} \
