@@ -223,7 +223,7 @@ spec:
 
         fi
     - name: update-kustomization
-      image: image-registry.openshift-image-registry.svc:5000/ace/yq-zip
+      image: quay.io/hollisc/yq-zip
       args:
         - $(params.source-dir)/kustomization_items.txt
       workingDir: $(params.source-dir)
