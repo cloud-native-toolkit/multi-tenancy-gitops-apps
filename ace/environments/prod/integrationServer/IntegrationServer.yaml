@@ -14,12 +14,12 @@ spec:
   service:
     endpointType: https
   useCommonServices: true
-  version: 11.0.0.10-r1
+  version: 11.0.0.10-r2
   adminServerSecure: true
   pod:
     containers:
       runtime:
-        image: quay.io/hollisc/create-customer-details-rest:1.0.0
+        image: image-registry.openshift-image-registry.svc:5000/ci/create-customer-details-rest:7845e44b21d544054244005aff75203917d6e966
         imagePullPolicy: Always
   configurations:
     - ibm-rest-dbparms.txt
