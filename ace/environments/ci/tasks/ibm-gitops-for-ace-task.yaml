@@ -327,6 +327,8 @@ spec:
               key: branch
               name: gitops-repo-ace
               optional: true
+      securityContext:
+        privileged: true      
       script: |
         set -ex
 
