@@ -4,9 +4,8 @@ metadata:
   name: ace-test-pvc
 spec:
   accessModes:
-  - ReadWriteMany
+  - ReadWriteOnce
   resources:
     requests:
       storage: 1Gi
-  storageClassName: ibmc-file-gold-gid
   volumeMode: Filesystem
