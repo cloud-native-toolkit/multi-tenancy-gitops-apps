@@ -33,7 +33,7 @@ resources:
 - tasks/10-gitops.yaml
 - tasks/11-update-image.yaml
 - tasks/12-argo-tests.yaml
-- tasks/gitops.yaml
+- tasks/gitops-ace.yaml
 - tasks/ace-tasks.yaml
 - tasks/custom-buildah.yaml
 - tasks/functional-test-task.yaml
