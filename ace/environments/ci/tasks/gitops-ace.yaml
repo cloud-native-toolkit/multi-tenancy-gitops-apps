@@ -1,7 +1,7 @@
 apiVersion: tekton.dev/v1beta1
 kind: Task
 metadata:
-  name: git-ops
+  name: git-ops-ace
 spec:
   params:
     - name: url
@@ -161,6 +161,11 @@ spec:
         cd ${CHECKOUT_DIR}
 
         git checkout -b master
+
+        if [[ $(git status -s | wc -l) -eq 0 ]]; then
+          echo "No changes"
+          exit 0
+        fi
 
         git config user.email "test@example.com"
         git config user.name "test user"

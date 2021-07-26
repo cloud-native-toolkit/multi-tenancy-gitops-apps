@@ -5,7 +5,7 @@ metadata:
 
 spec:
   params:
-  
+
   - name: is-source-repo-url
     type: string
     default: https://github.com/cloud-native-toolkit-demos/ace-customer-details.git
@@ -15,7 +15,7 @@ spec:
   - name: is-source-repo-private-key
     type: string
     default: '""'
-  
+
   - name: is-infra-repo-url
     type: string
     default: https://github.com/cloud-native-toolkit-demos/ace-infra.git
@@ -47,9 +47,9 @@ spec:
     type: string
     default: ace/environments/dev/kustomization.yaml
 
-  
+
   tasks:
-  
+
   - name: clone-is-source
     params:
     - name: url
@@ -66,7 +66,7 @@ spec:
     workspaces:
     - name: output
       workspace: shared-workspace
-  
+
   - name: clone-is-infra
     params:
     - name: url
@@ -83,7 +83,7 @@ spec:
     workspaces:
     - name: output
       workspace: shared-workspace
-  
+
   - name: resolve-props
     params:
     - name: is-source-directory
@@ -96,7 +96,7 @@ spec:
     workspaces:
     - name: input
       workspace: shared-workspace
-  
+
   - name: generate-bar
     params:
     - name: is-source-directory
@@ -115,7 +115,7 @@ spec:
     workspaces:
     - name: workspace
       workspace: shared-workspace
-  
+
   - name: build-is-image
     params:
     - name: TLSVERIFY
@@ -135,7 +135,7 @@ spec:
     workspaces:
     - name: source
       workspace: shared-workspace
-  
+
   - name: create-is
     taskRef:
       kind: Task
@@ -154,11 +154,11 @@ spec:
     workspaces:
       - name: input
         workspace: shared-workspace
-  
+
   - name: git-ops
     taskRef:
       kind: Task
-      name: git-ops
+      name: git-ops-ace
     params:
       - name: url
         value: $(params.git-ops-repo-url)
