@@ -29,9 +29,12 @@ spec:
   - description: Points to the dev/staging env
     name: source-env
     type: string
+    default: dev
   - description: Points to the staging/prod env
     name: destination-env
     type: string
+    default: staging
+
 
   tasks:
 
@@ -51,7 +54,7 @@ spec:
     workspaces:
     - name: output
       workspace: shared-workspace
-  
+
   - name: resolve-props
     params:
     - name: is-source-directory
@@ -64,7 +67,7 @@ spec:
     workspaces:
     - name: input
       workspace: shared-workspace
-  
+
   - name: functional-test
     params:
     - name: source-env
