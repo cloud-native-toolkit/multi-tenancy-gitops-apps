@@ -345,7 +345,7 @@ spec:
         git config user.name "Cloud Native Toolkit Pipeline"
 
         git add .
-        git commit -m "Cloudnative toolkit commit" --amend --no-edit --signoff
+        git commit -m "Cloudnative toolkit commit" --signoff
         git remote rm origin
 
         git remote add origin ${GIT_URL} > /dev/null 2>&1
