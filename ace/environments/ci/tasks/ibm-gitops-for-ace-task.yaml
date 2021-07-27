@@ -141,9 +141,6 @@ spec:
           BRANCH_CMD="-b ${GIT_BRANCH}"
         fi
 
-        git config user.email "bot@cloudnativetoolkit.dev"
-        git config user.name "Cloud Native Toolkit Pipeline"
-
         GIT_USERNAME="$(echo -e "${GIT_USERNAME}" | tr -d '[:space:]')"
         GIT_PASSWORD="$(echo -e "${GIT_PASSWORD}" | tr -d '[:space:]')"
 
