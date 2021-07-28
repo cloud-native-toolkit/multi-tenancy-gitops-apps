@@ -29,7 +29,7 @@ spec:
     - description: User Load
       name: jmeter-users
       type: string
-      default: 10
+      default: "10"
   tasks:
     - name: clone-is-source
       params:
