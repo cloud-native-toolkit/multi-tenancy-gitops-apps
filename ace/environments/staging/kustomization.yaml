@@ -9,3 +9,5 @@ resources:
   - configurations/ibm_rest_dbparms_txt.yaml
   - configurations/ibm_rest_policy.yaml
   - configurations/ibm_rest_serverconf_yaml.yaml
+patchesStrategicMerge:
+  - integrationServer/IntegrationServerPatch.yaml
