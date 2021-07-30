@@ -12,17 +12,17 @@ spec:
       containers:
       - name: functional-test
         image: quay.io/rhcanada/tkn-cli
-        command: 
+        command:
           - tkn
-        args: 
-          - -n 
-          - ci 
-          - pipeline 
-          - start 
+        args:
+          - -n
+          - ci
+          - pipeline
+          - start
           - ace-promote-dev-stage
           - --param
           - is-source-repo-url=https://github.com/cloud-native-toolkit-demos/ace-customer-details.git
-          - --param 
+          - --param
           - is-source-repo-private-key=""
           - --param
           - source-env=dev
