@@ -25,7 +25,7 @@ spec:
   - name: image-tag
     default: ""
   - name: BUILDER_IMAGE
-    default: quay.io/buildah/stable:v1.15.0
+    default: quay.io/buildah/stable:v1.21.4
   - name: DOCKERFILE
     default: ./Dockerfile
   - name: CONTEXT
