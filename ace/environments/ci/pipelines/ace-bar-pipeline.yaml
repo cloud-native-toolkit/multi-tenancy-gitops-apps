@@ -13,6 +13,9 @@ spec:
   - name: is-source-repo-url
     type: string
     default: https://github.com/cloud-native-toolkit-demos/ace-customer-details.git
+  - default: ""
+    name: is-source-revision
+    type: string
   - default: is-source
     name: is-source-directory
     type: string
@@ -53,6 +56,8 @@ spec:
     params:
     - name: url
       value: $(params.is-source-repo-url)
+    - name: revision
+      value: $(params.is-source-revision)
     - name: subdirectory
       value: $(params.is-source-directory)
     - name: deleteExisting
