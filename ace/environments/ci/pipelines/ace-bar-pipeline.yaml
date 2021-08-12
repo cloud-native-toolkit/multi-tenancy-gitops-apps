@@ -6,6 +6,10 @@ metadata:
 spec:
   params:
 
+  - name: ace-base-image
+    type: string
+    default: cp.icr.io/cp/appc/ace-server-prod:12.0.1.0-r3-20210722-112920
+
   - name: is-source-repo-url
     type: string
     default: https://github.com/cloud-native-toolkit-demos/ace-customer-details.git
@@ -97,6 +101,8 @@ spec:
 
   - name: build-is-image
     params:
+    - name: ACE_BASE_IMAGE
+      value: $(params.ace-base-image)
     - name: TLSVERIFY
       value: "false"
     - name: IMAGE
