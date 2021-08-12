@@ -106,8 +106,8 @@ spec:
 
   - name: build-is-image
     params:
-    - name: ACE_BASE_IMAGE
-      value: $(params.ace-base-image)
+    - name: BUILD_EXTRA_ARGS
+      value: --build-arg BASE=$(params.ace-base-image)
     - name: TLSVERIFY
       value: "false"
     - name: IMAGE
