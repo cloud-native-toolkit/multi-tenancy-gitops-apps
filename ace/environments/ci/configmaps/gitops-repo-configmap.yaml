@@ -3,7 +3,7 @@ kind: ConfigMap
 metadata:
   name: gitops-repo-ace
 data:
-  branch: master
+  branch: ocp47-2021-2
   host: github.com
   org: cloud-native-toolkit-demos
   owner: cloud-native-toolkit-demos
