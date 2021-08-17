@@ -1,0 +1,17 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  labels:
+    app: multi-tenancy-gitops
+    group: pipeline
+    type: git
+  name: gitops-repo-mq
+data:
+  branch: ocp47-2021-2
+  host: github.com
+  org: cloud-native-toolkit-demos
+  owner: cloud-native-toolkit-demos
+  parentdir: .
+  protocol: https
+  repo: multi-tenancy-gitops-apps
+  url: https://github.com/cloud-native-toolkit-demos/multi-tenancy-gitops-apps.git
