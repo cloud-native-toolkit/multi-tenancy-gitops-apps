@@ -1,7 +1,7 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: mq-spring-app-dev
+  name: dev-mq-spring-app-instance
   annotations:
     argocd.argoproj.io/sync-wave: "300"
   finalizers:

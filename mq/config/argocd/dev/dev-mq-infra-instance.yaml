@@ -1,7 +1,7 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: ibm-mq-dev-instance
+  name: dev-mq-infra-instance
   annotations:
     argocd.argoproj.io/sync-wave: "300"
   finalizers:
