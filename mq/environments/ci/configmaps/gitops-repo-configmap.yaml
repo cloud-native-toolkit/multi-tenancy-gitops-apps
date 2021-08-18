@@ -5,7 +5,7 @@ metadata:
     app: multi-tenancy-gitops
     group: pipeline
     type: git
-  name: gitops-repo-mq
+  name: gitops-repo
 data:
   branch: ocp47-2021-2
   host: github.com
