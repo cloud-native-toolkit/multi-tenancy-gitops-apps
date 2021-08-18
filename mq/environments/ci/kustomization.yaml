@@ -15,6 +15,8 @@ resources:
 - roles/custom-pipeline-sa-role.yaml
 - roles/custom-pipeline-sa-rolebinding.yaml
 #- routes/cntk-route.yaml
+- secrets/git-credentials-secret.yaml
+- secrets/ibm-entitled-key-secret.yaml
 - tasks/10-gitops.yaml
 - tasks/12-functional-tests.yaml
 - tasks/4-smoke-tests-mq.yaml
