@@ -41,7 +41,7 @@ ace_update_git () {
 
 ace_review_git () {
     pushd $ROOTDIR/ace
-    git diff
+    git --no-pager diff
     popd
 }
 
