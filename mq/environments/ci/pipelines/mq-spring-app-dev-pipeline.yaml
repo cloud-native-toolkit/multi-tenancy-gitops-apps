@@ -17,10 +17,10 @@ spec:
       default: "false"
     - name: environment
       description: environment
-      default: namespace-dev
+      default: dev
     - name: app-type
       description: Application
-      default: 3-apps/instances
+      default: mq/environments
     - name: security
       description: enable app security
       default: "false"

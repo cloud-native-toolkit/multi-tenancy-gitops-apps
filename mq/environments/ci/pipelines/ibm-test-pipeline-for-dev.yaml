@@ -13,10 +13,10 @@ spec:
       default: master
     - name: src-environment
       description: environment
-      default: namespace-dev
+      default: dev
     - name: dest-environment
       description: environment
-      default: namespace-staging
+      default: staging
     - name: app-type
       description: Services / Application (2-services/instances or 3-apps/instances)
     - name: app-name

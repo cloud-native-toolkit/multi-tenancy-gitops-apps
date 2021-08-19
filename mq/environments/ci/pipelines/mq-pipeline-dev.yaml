@@ -16,10 +16,10 @@ spec:
       default: "false"
     - name: environment
       description: environment
-      default: namespace-dev
+      default: dev
     - name: app-type
       description: Service
-      default: 2-services/instances
+      default: mq/environments
     - name: security
       description: Enable security for queueManager
       default: "false"
