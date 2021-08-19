@@ -11,27 +11,65 @@ metadata:
     version: 0.0.0
 spec:
   params:
+  - name: git-url
+    default: ""
+  - name: git-revision
+    default: master
+  - name: source-dir
+    default: /source
+  - name: release-name
+    default: ""
   - name: src-environment
     default: ""
   - name: app-name
     default: ""
+  - name: instance-type
+    default: ""
+  - name: test-file
+    default: ""
+  volumes:
+    - name: source
+      emptyDir: {}
+  stepTemplate:
+    volumeMounts:
+      - name: source
+        mountPath: $(params.source-dir)
   steps:
+  - name: git-clone
+    image: quay.io/ibmgaragecloud/alpine-git
+    env:
+      - name: GIT_PASSWORD
+        valueFrom:
+          secretKeyRef:
+            name: git-credentials
+            key: password
+            optional: true
+      - name: GIT_USERNAME
+        valueFrom:
+          secretKeyRef:
+            name: git-credentials
+            key: username
+            optional: true
+    script: |
+      set +x
+      if [[ -n "${GIT_USERNAME}" ]] && [[ -n "${GIT_PASSWORD}" ]]; then
+          git clone "$(echo $(params.git-url) | awk -F '://' '{print $1}')://${GIT_USERNAME}:${GIT_PASSWORD}@$(echo $(params.git-url) | awk -F '://' '{print $2}')" $(params.source-dir)
+      else
+          set -x
+          git clone $(params.git-url) $(params.source-dir)
+      fi
+      set -x
+      cd $(params.source-dir)
+      git checkout $(params.git-revision)
   - name: wait-till-deployment
     image: quay.io/openshift/origin-cli:latest
+    workingDir: $(params.source-dir)
     script: |
       set -e
       SLEEP_TIME_SEC=10
       RETRIES=20
 
-      if [[ "$(params.src-environment)" = "namespace-dev" ]]; then
-        SRC_ENV="dev"
-      elif [[ "$(params.src-environment)" = "namespace-staging" ]]; then
-        SRC_ENV="staging"
-      elif [[ "$(params.src-environment)" = "namespace-prod" ]]; then
-        SRC_ENV="prod"
-      else
-        echo "Please check ... Environment you specified does not exist"
-      fi
+      SRC_ENV=$(echo $(params.src-environment) | cut -d "-" -f2)
 
       wait_until() {
         condition=$1
@@ -48,18 +86,18 @@ spec:
       }
 
       resolve_deployment() {
-          deployment=$(oc -n ${SRC_ENV} get deploy -l app.kubernetes.io/instance=mq-spring-app-dev -o jsonpath='{$.items[0].metadata.name}' 2>/dev/null)
+          deployment=$(oc -n ${SRC_ENV} get deploy -l app.kubernetes.io/instance=$(params.release-name) -o jsonpath='{$.items[0].metadata.name}' 2>/dev/null)
       }
 
       resolve_statefulset() {
-          statefulset=$(oc -n ${SRC_ENV} get statefulset -l app.kubernetes.io/instance=qm-dev -o jsonpath='{$.items[0].metadata.name}' 2>/dev/null)
+          statefulset=$(oc -n ${SRC_ENV} get statefulset -l app.kubernetes.io/instance=$(params.release-name) -o jsonpath='{$.items[0].metadata.name}' 2>/dev/null)
       }
 
-      if [[ $(params.app-name) = "mq-infra" ]]; then
+      if [[ $(params.instance-type) = "statefulset" ]]; then
         oc -n ${SRC_ENV} get statefulset
         wait_until resolve_statefulset "Could not find statefulset"
         oc -n ${SRC_ENV} rollout status statefulset $statefulset
-      elif [[ $(params.app-name) = "mq-spring-app" ]]; then
+      elif [[ $(params.instance-type) = "deployment" ]]; then
         oc -n ${SRC_ENV} get deploy
         wait_until resolve_deployment "Could not find deployment"
         oc -n ${SRC_ENV} rollout status deployment $deployment
@@ -69,21 +107,14 @@ spec:
       fi
   - name: resolve-route
     image: quay.io/openshift/origin-cli:latest
+    workingDir: $(params.source-dir)
     script: |
       #!/bin/bash
       set -e
       SLEEP_TIME_SEC=10
       RETRIES=20
 
-      if [[ "$(params.src-environment)" = "namespace-dev" ]]; then
-        SRC_ENV="dev"
-      elif [[ "$(params.src-environment)" = "namespace-staging" ]]; then
-        SRC_ENV="staging"
-      elif [[ "$(params.src-environment)" = "namespace-prod" ]]; then
-        SRC_ENV="prod"
-      else
-        echo "Please check ... Environment you specified does not exist"
-      fi
+      SRC_ENV=$(echo $(params.src-environment) | cut -d "-" -f2)
 
       wait_until() {
         condition=$1
@@ -105,19 +136,33 @@ spec:
           https://$url 2>/dev/null
       }
 
-      if [[ $(params.app-name) = "mq-infra" ]]; then
+      if [[ $(params.instance-type) = "statefulset" ]]; then
         echo "This is a QueueManager ... Skipping this step"
-      elif [[ $(params.app-name) = "mq-spring-app" ]]; then
-        route=$(oc -n ${SRC_ENV} get route mq-spring-app -o jsonpath='{.spec.host}')
-        echo -n $route > /shared/route.txt
+      elif [[ $(params.instance-type) = "deployment" ]]; then
+        route=$(oc -n ${SRC_ENV} get route $(params.app-name) -o jsonpath='{.spec.host}')
+        echo -n $route > /source/route.txt
         wait_until "url_is_ready $route/" "Route is not set up"
       else
         echo "App you are looking for does not exist"
         exit 1
       fi
-    volumeMounts:
-    - mountPath: /shared
-      name: shared-volume
-  volumes:
-  - emptyDir: {}
-    name: shared-volume
+  - name: run-test
+    image: postman/newman:ubuntu
+    workingDir: $(params.source-dir)
+    script: |
+      #!/bin/sh
+      set -ex
+      if [ ! -f /source/route.txt ]; then
+        echo "This is a QueueManager ... Skipping this step"
+        exit 0
+      fi
+      route=$(cat /source/route.txt)
+      echo $route
+      test_file="$(params.test-file)"
+      if [ -e $test_file ]; then
+        newman run \
+          --env-var base-url=$route \
+          $test_file
+      else
+        echo "Skipping tests ... Postman collections does not exist"
+      fi

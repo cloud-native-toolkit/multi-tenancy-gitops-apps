@@ -6,6 +6,11 @@ metadata:
     app.openshift.io/runtime: test
 spec:
   params:
+    - name: git-url
+      description: The url for the git repository
+    - name: git-revision
+      description: git branch for the test app
+      default: master
     - name: src-environment
       description: environment
       default: namespace-dev
@@ -19,15 +24,30 @@ spec:
     - name: git-pr
       description: Enable the pipeline to do a PR for the gitops repo
       default: "true"
+    - name: release-name
+      description: Instance name of the deployment or statefulset (qm-dev or mq-spring-app-dev)
+    - name: instance-type
+      description: Instance type (deployment or statefulset)
+    - name: test-file
+      description: Path of the postman collection (postman/mq-spring-app.postman_collection.json)
+      default: "<If tests exists, replace with postman collection json path>"
   tasks:
     - name: dev-instance-tests
       taskRef:
         name: ibm-functional-test
       params:
+        - name: git-url
+          value: "$(params.git-url)"
         - name: app-name
           value: "$(params.app-name)"
         - name: src-environment
           value: "$(params.src-environment)"
+        - name: release-name
+          value: "$(params.release-name)"
+        - name: instance-type
+          value: "$(params.instance-type)"
+        - name: test-file
+          value: "$(params.test-file)"
     - name: gitops
       taskRef:
         name: ibm-gitops

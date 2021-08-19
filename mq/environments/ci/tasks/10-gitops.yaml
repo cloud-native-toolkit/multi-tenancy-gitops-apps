@@ -167,14 +167,6 @@ spec:
 
           YAML_FILE="$(params.yaml)"
 
-          if [[ -z "$(params.src-environment)" ]]; then
-            VERSION="$(params.version)"
-            HELM_URL="$(params.helm-url)"
-          else
-            VERSION="$(grep 'version:' ./$(params.app-type)/$(params.src-environment)/$(params.app-name)/${YAML_FILE} | awk 'NR==1{print $2}')"
-            HELM_URL="$(grep 'repository:' ./$(params.app-type)/$(params.src-environment)/$(params.app-name)/requirements.yaml | awk 'NR==1{print $2}')"
-          fi
-
           if [[ -z "${GIT_HOST}" ]] || [[ -z "${GIT_ORG}" ]] || [[ -z "${GIT_REPO}" ]]; then
               echo "GitOps repo has not been configured with confimap gitops-repo. Skipping trigger step"
               exit 0
@@ -204,6 +196,14 @@ spec:
           set -x
           cd gitops_cd
 
+          if [[ -z "$(params.src-environment)" ]]; then
+            VERSION="$(params.version)"
+            HELM_URL="$(params.helm-url)"
+          else
+            VERSION="$(grep 'version:' ./$(params.app-type)/$(params.src-environment)/$(params.app-name)/${YAML_FILE} | awk 'NR==1{print $2}')"
+            HELM_URL="$(grep 'repository:' ./$(params.app-type)/$(params.src-environment)/$(params.app-name)/requirements.yaml | awk 'NR==1{print $2}')"
+          fi
+
           if [[ -z "${SUBDIR_SRC}" && -f "${SUBDIR_DEST}/${YAML_FILE}" ]]; then
             echo "Requirements before update"
             cat "${SUBDIR_DEST}/${YAML_FILE}"
@@ -230,7 +230,7 @@ spec:
           elif [[ -n "${HELM_URL}" ]]; then
             if [[ ! -z ${SUBDIR_DEST} ]]; then
               files=$(ls ${SUBDIR_DEST} | wc -l)
-              if [[ ${files} -lt 3 ]]; then
+              if [[ ${files} -gt 1 && ${files} -lt 3 ]]; then
                 echo "${SUBDIR_DEST} is present but files are not existing"
                 rm -rf ${SUBDIR_DEST}
               fi
