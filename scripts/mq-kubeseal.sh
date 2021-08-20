@@ -65,7 +65,7 @@ mq_git_add_commit_push () {
 
 wait_kubeseal_ready
 
-#mq_kubeseal_artifactory
+mq_kubeseal_artifactory
 
 mq_kubeseal_git
 
