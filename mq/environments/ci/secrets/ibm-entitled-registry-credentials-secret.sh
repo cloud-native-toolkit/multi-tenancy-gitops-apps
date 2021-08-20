@@ -1,8 +1,15 @@
 #!/usr/bin/env bash
 
 # Set variables
-IBM_ENTITLEMENT_KEY=<ENTITLEMENT-KEY>
-SEALEDSECRET_NAMESPACE=sealed-secrets
+if [[ -z ${IBM_ENTITLEMENT_KEY} ]]; then
+  echo "Please provide environment variable IBM_ENTITLEMENT_KEY"
+  exit 1
+fi
+
+IBM_ENTITLEMENT_KEY=${IBM_ENTITLEMENT_KEY}
+
+SEALED_SECRET_NAMESPACE=${SEALED_SECRET_NAMESPACE:-sealed-secrets}
+SEALED_SECRET_CONTOLLER_NAME=${SEALED_SECRET_CONTOLLER_NAME:-sealed-secrets}
 
 # Create Kubernetes Secret yaml
 oc create secret generic ibm-entitled-registry-credentials \
@@ -11,7 +18,7 @@ oc create secret generic ibm-entitled-registry-credentials \
 --dry-run=true -o yaml > delete-ibm-entitled-registry-credentials-secret.yaml
 
 # Encrypt the secret using kubeseal and private key from the cluster
-kubeseal --scope cluster-wide --controller-name=sealed-secrets --controller-namespace=${SEALEDSECRET_NAMESPACE} -o yaml < delete-ibm-entitled-registry-credentials-secret.yaml > ibm-entitled-registry-credentials-secret.yaml
+kubeseal --scope cluster-wide --controller-name=${SEALED_SECRET_CONTOLLER_NAME} --controller-namespace=${SEALEDSECRET_NAMESPACE} -o yaml < delete-ibm-entitled-registry-credentials-secret.yaml > ibm-entitled-registry-credentials-secret.yaml
 
 # NOTE, do not check delete-ibm-entitled-key-secret.yaml into git!
 rm delete-ibm-entitled-registry-credentials-secret.yaml

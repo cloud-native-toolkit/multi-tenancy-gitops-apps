@@ -10,6 +10,7 @@
 #fi
 
 SEALED_SECRET_NAMESPACE=${SEALED_SECRET_NAMESPACE:-sealed-secrets}
+SEALED_SECRET_CONTOLLER_NAME=${SEALED_SECRET_CONTOLLER_NAME:-sealed-secrets}
 
 oc get secret artifactory-access -n ci -o yaml | sed 's/namespace: .*/namespace: tools/' |  oc apply -f - --dry-run=client -o yaml delete-artifactory-access-secret.yaml
 
@@ -28,7 +29,7 @@ oc get secret artifactory-access -n ci -o yaml | sed 's/namespace: .*/namespace:
 #--dry-run=client -o yaml > delete-artifactory-access-secret.yaml
 
 # Encrypt the secret using kubeseal and private key from the cluster
-kubeseal --scope cluster-wide --controller-name=sealed-secrets --controller-namespace=${SEALED_SECRET_NAMESPACE} -o yaml < delete-artifactory-access-secret.yaml > artifactory-access-secret.yaml
+kubeseal --scope cluster-wide --controller-name=${SEALED_SECRET_CONTOLLER_NAME} --controller-namespace=${SEALED_SECRET_NAMESPACE} -o yaml < delete-artifactory-access-secret.yaml > artifactory-access-secret.yaml
 
 # NOTE, do not check delete-artifactory-access-secret.yaml into git!
 rm delete-artifactory-access-secret.yaml
