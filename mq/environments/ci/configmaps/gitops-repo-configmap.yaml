@@ -9,9 +9,9 @@ metadata:
 data:
   branch: ocp47-2021-2
   host: github.com
-  org: cloud-native-toolkit-demos
-  owner: cloud-native-toolkit-demos
+  org: <GIT_ORG>
+  owner: <GIT_ORG>
   parentdir: .
   protocol: https
   repo: multi-tenancy-gitops-apps
-  url: https://github.com/cloud-native-toolkit-demos/multi-tenancy-gitops-apps.git
+  url: https://github.com/<GIT_ORG>/multi-tenancy-gitops-apps.git
