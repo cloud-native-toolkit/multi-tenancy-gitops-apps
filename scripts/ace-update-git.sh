@@ -7,7 +7,7 @@ ROOTDIR="${SCRIPTDIR}/.."
 [[ -n "${DEBUG:-}" ]] && set -x
 
 
-SKIP_ARGO_REPLACE_GIT=${SKIP_ARGO_REPLACE_GIT:-''}
+SKIP_ARGO_REPLACE_GIT=${SKIP_ARGO_REPLACE_GIT:-true}
 
 if [ -z ${GIT_USER} ]; then echo "Please set GIT_USER when running script"; exit 1; fi
 set -u
@@ -26,7 +26,7 @@ ace_update_git () {
         rm "${File}.bak"
     done
 
-    if [[ -z "${SKIP_ARGO_REPLACE_GIT}" ]]; then
+    if [[ "${SKIP_ARGO_REPLACE_GIT}" == "false" ]]; then
         find ${ROOTDIR}/ace/config/argocd -name '*.yaml' -print0 |
         while IFS= read -r -d '' File; do
             echo "Processing $File"
