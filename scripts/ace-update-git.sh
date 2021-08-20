@@ -48,7 +48,7 @@ ace_review_git () {
 ace_git_add_commit_push () {
     pushd $ROOTDIR/ace
     git add .
-    git commit -m "update kubseal for ace files"
+    git commit -m "update git references for ace files"
     git push origin
     popd
 }
