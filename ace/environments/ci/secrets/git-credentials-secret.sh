@@ -1,15 +1,12 @@
 #!/usr/bin/env bash
 
-# Set variables
-if [[ -z ${GIT_USER} ]]; then
-  echo "Please provide environment variable GIT_USER"
-  exit 1
-fi
+set -eo pipefail
 
-if [[ -z ${GIT_TOKEN} ]]; then
-  echo "Please provide environment variable GIT_TOKEN"
-  exit 1
-fi
+# Set variables
+if [ -z ${GIT_BASEURL} ]; then echo "Please set GIT_BASEURL when running script"; exit 1; fi
+if [ -z ${GIT_USER} ]; then echo "Please set GIT_USER when running script"; exit 1; fi
+if [ -z ${GIT_TOKEN} ]; then echo "Please set GIT_TOKEN when running script"; exit 1; fi
+
 
 SEALED_SECRET_NAMESPACE=${SEALED_SECRET_NAMESPACE:-sealed-secrets}
 SEALED_SECRET_CONTOLLER_NAME=${SEALED_SECRET_CONTOLLER_NAME:-sealed-secrets}
@@ -21,7 +18,7 @@ kind: Secret
 metadata:
   name: git-credentials
   annotations:
-    tekton.dev/git-0: https://github.com
+    tekton.dev/git-0: ${GIT_BASEURL}
 type: kubernetes.io/basic-auth
 stringData:
   username: ${GIT_USER}
