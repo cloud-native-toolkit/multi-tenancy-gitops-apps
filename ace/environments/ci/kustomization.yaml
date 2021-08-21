@@ -6,7 +6,6 @@ resources:
 # Performance pipeline requires configuration of backend for JMeter
 - pipelines/ace-promote-stage-prod-pipeline.yaml
 - pipelines/ace-bar-pipeline.yaml
-- pipelines/ace-config-pipeline.yaml
 - pvc/ace-bar-pvc.yaml
 - pvc/ace-rest-ws-pvc.yaml
 - pvc/ace-test-pvc.yaml
@@ -40,6 +39,4 @@ resources:
 - tasks/ibm-gitops-for-ace-task.yaml
 - tasks/ibm-jmeter-performance-test.yaml
 #- triggerbindings/ace-bar-trigger-binding.yaml
-#- triggerbindings/ace-config-trigger-binding.yaml
 #- triggertemplates/ace-bar-trigger-template.yaml
-#- triggertemplates/ace-config-trigger-template.yaml
