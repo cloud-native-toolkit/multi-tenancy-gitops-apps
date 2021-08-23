@@ -27,13 +27,16 @@ GIT_HOST=${GIT_HOST:-github.com}
 GIT_BASEURL="https://${GIT_HOST}"
 GITOPS_REPO=${GITOPS_REPO:-multi-tenancy-gitops-apps}
 GITOPS_BRANCH=${GITOPS_BRANCH:-ocp47-2021-2}
-GIT_ACE_APP=${GITOPS_REPO:-ace-customer-details}
+GIT_ACE_APP=${GIT_ACE_APP:-ace-customer-details}
 
 
 wait_kubeseal_ready () {
     while ! oc wait pod --timeout=-1s --for=condition=Ready -l '!job-name' -n ${SEALED_SECRET_NAMESPACE} > /dev/null; do sleep 30; done
 }
 
+ace_git_pull () {
+    git pull
+}
 ace_kubeseal_git () {
     pushd $ROOTDIR/ace/environments/ci/secrets
     source git-credentials-secret.sh
@@ -85,6 +88,8 @@ ace_git_add_commit_push () {
 # main
 
 wait_kubeseal_ready
+
+ace_git_pull
 
 ace_kubeseal_git
 
