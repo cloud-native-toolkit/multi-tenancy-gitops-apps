@@ -1,9 +1,7 @@
 resources:
 - configmaps/gitops-repo-configmap.yaml
-#- eventlisteners/ace-bar-event-listener.yaml
-#- eventlisteners/ace-config-event-listener.yaml
+- eventlisteners/ace-bar-event-listener.yaml
 - pipelines/ace-promote-dev-stage-pipeline.yaml
-# Performance pipeline requires configuration of backend for JMeter
 - pipelines/ace-promote-stage-prod-pipeline.yaml
 - pipelines/ace-bar-pipeline.yaml
 - pvc/ace-bar-pvc.yaml
@@ -11,8 +9,7 @@ resources:
 - pvc/ace-test-pvc.yaml
 - roles/custom-pipeline-clusterrole.yaml
 - roles/custom-pipeline-clusterrolebinding.yaml
-#- routes/ace-bar-webhook-event-listener.yaml
-#- routes/ace-config-webhook-event-listener.yaml
+- routes/ace-bar-webhook-event-listener.yaml
 - secrets/basic-auth-rest-secret.yaml
 - secrets/git-credentials-secret.yaml
 - secrets/ibm-ace-server-jks-secret.yaml
@@ -38,5 +35,5 @@ resources:
 - tasks/functional-test-task.yaml
 - tasks/ibm-gitops-for-ace-task.yaml
 - tasks/ibm-jmeter-performance-test.yaml
-#- triggerbindings/ace-bar-trigger-binding.yaml
-#- triggertemplates/ace-bar-trigger-template.yaml
+- triggerbindings/ace-bar-trigger-binding.yaml
+- triggertemplates/ace-bar-trigger-template.yaml

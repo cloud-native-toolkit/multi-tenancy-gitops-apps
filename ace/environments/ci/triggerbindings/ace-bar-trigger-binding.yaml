@@ -5,6 +5,6 @@ metadata:
 spec:
   params:
   - name: source-git-url
-    value: $(body.repository.ssh_url)
+    value: $(body.repository.url)
   - name: source-repo-name
     value: $(body.repository.name)
