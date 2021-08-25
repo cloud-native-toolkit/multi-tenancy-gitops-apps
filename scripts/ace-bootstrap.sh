@@ -35,7 +35,9 @@ wait_kubeseal_ready () {
 }
 
 ace_git_pull () {
+    pushd $ROOTDIR
     git pull
+    popd
 }
 ace_kubeseal_git () {
     pushd $ROOTDIR/ace/environments/ci/secrets
