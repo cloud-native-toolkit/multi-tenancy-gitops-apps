@@ -1,3 +1,9 @@
+#!/usr/bin/env bash
+
+CLUSTER_DOMAIN=$(oc get dns cluster -o jsonpath='{ .spec.baseDomain }')
+
+# Create Kubernetes Secret yaml
+cat <<EOF > ci-mq-client-certificate.yaml
 apiVersion: cert-manager.io/v1
 kind: Certificate
 metadata:
@@ -26,3 +32,4 @@ spec:
   subject:
     organizations:
     - ibm
+EOF
