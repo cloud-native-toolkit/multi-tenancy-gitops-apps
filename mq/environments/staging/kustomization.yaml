@@ -1,6 +1,7 @@
 resources:
 #- certificates/staging-mq-client-certificate.yaml
 #- certificates/staging-mq-server-certificate.yaml
+#- secrets/mq-client-jks-password-secret.yaml
 
 ## NOTES:
 ## - mq-infra/* is explicitly not handled here as it is handled by 
