@@ -1,11 +1,7 @@
 #!/usr/bin/env bash
 
 # Set variables
-if [[ -z ${KEY_STORE_PASSWORD} ]]; then
-  echo "Please provide environment variable KEY_STORE_PASSWORD"
-  exit 1
-fi
-
+KEY_STORE_PASSWORD=${KEY_STORE_PASSWORD:-mqclientci}
 SEALED_SECRET_NAMESPACE=${SEALED_SECRET_NAMESPACE:-sealed-secrets}
 SEALED_SECRET_CONTOLLER_NAME=${SEALED_SECRET_CONTOLLER_NAME:-sealed-secrets}
 
