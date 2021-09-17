@@ -6,10 +6,7 @@ if [[ -z ${GIT_ORG} ]]; then
   exit 1
 fi
 
-if [[ -z ${GIT_BRANCH} ]]; then
-  echo "Please provide environment variable GIT_BRANCH"
-  exit 1
-fi
+GIT_BRANCH=${GIT_BRANCH:-master}
 
 # Create Kubernetes Secret yaml
 ( echo "cat <<EOF" ; cat gitops-repo-configmap.yaml_template ; echo EOF ) | \
