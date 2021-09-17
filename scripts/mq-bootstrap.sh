@@ -123,6 +123,7 @@ mq_server_certificate_prod () {
     pushd $ROOTDIR/mq/environments/prod/certificates
     source prod-mq-server-certificate.sh
     popd    
+}
 
 mq_selfsigned_certificate () {
     pushd $ROOTDIR/mq/environments/tools/certificates/mq-selfsigned-certificate
