@@ -3,27 +3,6 @@
 CLUSTER_DOMAIN=$(oc get dns cluster -o jsonpath='{ .spec.baseDomain }')
 
 # Create Kubernetes Secret yaml
-cat <<EOF > staging-mq-server-certificate.yaml
-apiVersion: cert-manager.io/v1
-kind: Certificate
-metadata:
-  name: staging-mq-server-cert
-spec:
-  dnsNames:
-    - >- 
-      *.${CLUSTER_DOMAIN}
-  privateKey:
-    algorithm: RSA
-    encoding: PKCS1
-    size: 2048
-  usages:
-    - server auth
-  issuerRef:
-    group: cert-manager.io
-    kind: ClusterIssuer
-    name: selfsigned-mq-cluster-issuer
-  secretName: mq-server-cert
-  subject:
-    organizations:
-    - ibm
-EOF
+( echo "cat <<EOF" ; cat staging-mq-server-certificate.yaml_template ; echo EOF ) | \
+CLUSTER_DOMAIN=${CLUSTER_DOMAIN} \
+sh > staging-mq-server-certificate.yaml
