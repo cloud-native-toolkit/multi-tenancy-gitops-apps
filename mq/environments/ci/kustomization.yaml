@@ -11,8 +11,10 @@ resources:
 #- pipelines/java-maven-dev-pipeline.yaml
 - pipelines/mq-pipeline-dev.yaml
 - pipelines/mq-spring-app-dev-pipeline.yaml
+- roles/custom-pipeline-sa-clusterrole.yaml
 - roles/custom-pipeline-sa-role.yaml
-- roles/custom-pipeline-sa-rolebinding.yaml
+- roles/custom-ci-pipeline-sa-rolebinding.yaml
+- roles/custom-dev-pipeline-sa-rolebinding.yaml
 #- routes/cntk-route.yaml
 - secrets/artifactory-access-secret.yaml
 - secrets/git-credentials-secret.yaml
