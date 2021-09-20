@@ -15,6 +15,8 @@ resources:
 - roles/custom-pipeline-sa-role.yaml
 - roles/custom-ci-pipeline-sa-rolebinding.yaml
 - roles/custom-dev-pipeline-sa-rolebinding.yaml
+- roles/custom-staging-pipeline-sa-rolebinding.yaml
+- roles/custom-prod-pipeline-sa-rolebinding.yaml
 #- routes/cntk-route.yaml
 - secrets/artifactory-access-secret.yaml
 - secrets/git-credentials-secret.yaml
