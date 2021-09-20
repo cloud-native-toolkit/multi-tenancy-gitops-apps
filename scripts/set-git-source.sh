@@ -12,8 +12,6 @@ if [ -z ${GIT_ORG} ]; then echo "Please set GIT_ORG when running script, optiona
 
 GIT_HOST=${GIT_HOST:-github.com}
 GIT_BASEURL="https://${GIT_HOST}"
-GITOPS_REPO=${GITOPS_REPO:-multi-tenancy-gitops-apps}
-GITOPS_BRANCH=${GITOPS_BRANCH:-master}
 GIT_GITOPS_APPLICATIONS=${GIT_GITOPS_APPLICATIONS:-multi-tenancy-gitops-apps}
 GIT_GITOPS_APPLICATIONS_BRANCH=${GIT_GITOPS_APPLICATIONS_BRANCH:-master}
 
@@ -21,8 +19,8 @@ GIT_GITOPS_APPLICATIONS_BRANCH=${GIT_GITOPS_APPLICATIONS_BRANCH:-master}
 find ${ROOTDIR}/ -name '*.yaml' -print0 |
 while IFS= read -r -d '' File; do
     if grep -q "kind: Application" "$File"; then
-      sed -i'.bak' -e "s#https://github.com/cloud-native-toolkit-demos/multi-tenancy-gitops-apps.git#${GIT_BASEURL}/${GIT_ORG}/${GITOPS_REPO}#" $File
-      sed -i'.bak' -e "s#targetRevision: master#targetRevision: ${GITOPS_BRANCH}#" $File
+      sed -i'.bak' -e "s#https://github.com/cloud-native-toolkit-demos/multi-tenancy-gitops-apps.git#${GIT_BASEURL}/${GIT_ORG}/${GIT_GITOPS_APPLICATIONS}#" $File
+      sed -i'.bak' -e "s#targetRevision: master#targetRevision: ${GIT_GITOPS_APPLICATIONS_BRANCH}#" $File
       rm "${File}.bak"
     fi
 done
