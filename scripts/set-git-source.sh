@@ -14,6 +14,8 @@ GIT_HOST=${GIT_HOST:-github.com}
 GIT_BASEURL="https://${GIT_HOST}"
 GITOPS_REPO=${GITOPS_REPO:-multi-tenancy-gitops-apps}
 GITOPS_BRANCH=${GITOPS_BRANCH:-master}
+GIT_GITOPS_APPLICATIONS=${GIT_GITOPS_APPLICATIONS:-multi-tenancy-gitops-apps}
+GIT_GITOPS_APPLICATIONS_BRANCH=${GIT_GITOPS_APPLICATIONS_BRANCH:-master}
 
 
 find ${ROOTDIR}/ -name '*.yaml' -print0 |
