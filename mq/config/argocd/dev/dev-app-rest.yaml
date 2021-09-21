@@ -1,7 +1,7 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: dev-mq-infra-instance
+  name: apps-mq-rest-dev-1
   annotations:
     argocd.argoproj.io/sync-wave: "300"
   finalizers:
@@ -12,15 +12,10 @@ spec:
     server: https://kubernetes.default.svc
   project: applications
   source:
-    path: mq/environments/dev/mq-infra
+    path: mq/environments/dev
     repoURL: https://github.com/cloud-native-toolkit-demos/multi-tenancy-gitops-apps.git
     targetRevision: master
-    helm:
-      valueFiles:
-      - values.yaml
   syncPolicy:
     automated:
       prune: true
       selfHeal: true
-    syncOptions:
-      - Replace=true
