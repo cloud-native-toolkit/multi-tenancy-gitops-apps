@@ -4,7 +4,7 @@ resources:
 - configmaps/gitops-repo-configmap.yaml
 #- eventlisteners/cntk-event-listener.yaml
 #- triggerbindings/cntk-binding.yaml
-#- triggertemplates/mq-infra-dev-template.yaml
+#- triggertemplates/mq-infra-dev.yaml
 #- triggertemplates/mq-spring-app-dev.yaml
 - pipelines/ibm-test-pipeline-for-dev.yaml
 - pipelines/ibm-test-pipeline-for-stage.yaml
