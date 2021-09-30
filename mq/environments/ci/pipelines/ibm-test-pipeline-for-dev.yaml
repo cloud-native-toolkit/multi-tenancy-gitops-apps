@@ -24,8 +24,8 @@ spec:
       description: Enable the pipeline to do a PR for the gitops repo
       default: "true"
     - name: test-file
-      description: Path of the postman collection (postman/mq-spring-app.postman_collection.json)
-      default: "postman/test.json"
+      description: Path of the postman collection
+      default: "postman/mq-spring-app.postman_collection.json"
   tasks:
     - name: dev-instance-tests
       taskRef:

@@ -24,8 +24,8 @@ spec:
       description: Enable the pipeline to do a PR for the gitops repo
       default: "true"
     - name: test-plan
-      description: Path of the postman collection (jmeter/mq-spring-app.jmx)
-      default: "jmeter/test.jmx"
+      description: Path of the postman collection
+      default: "jmeter/mq-spring-app.jmx"
   tasks:
     - name: stage-instance-tests
       taskRef:
