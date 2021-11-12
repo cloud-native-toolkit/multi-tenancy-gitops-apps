@@ -15,7 +15,10 @@ spec:
     path: apic/environments/multi-cluster/app
     repoURL: ${GIT_BASEURL}/${GIT_ORG}/${GIT_GITOPS_APPLICATIONS}
     targetRevision: ${GIT_GITOPS_APPLICATIONS_BRANCH}
-  syncPolicy: {}
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
   ignoreDifferences:
   - group: apps
     kind: DeploymentConfig
