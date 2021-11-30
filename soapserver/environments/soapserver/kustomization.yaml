@@ -1,9 +1,9 @@
 resources:
-- deployments/soapserver-deployment.yaml
+# - deployments/soapserver-deployment.yaml
 - deployments/soapserver-nonsecure-deployment.yaml
-- routes/soapserver-route.yaml
+# - routes/soapserver-route.yaml
 - routes/soapserver-nonsecure-route.yaml
-- secrets/ibm-jks-secret.yaml
-- secrets/ibm-passwords-secret.yaml
-- services/soapserver-svc.yaml
+# - secrets/ibm-jks-secret.yaml
+# - secrets/ibm-passwords-secret.yaml
+# - services/soapserver-svc.yaml
 - services/soapserver-nonsecure-svc.yaml
