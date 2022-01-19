@@ -222,7 +222,14 @@ spec:
             echo "Requirements before update"
             cat "${SUBDIR_DEST}/${YAML_FILE}"
 
-            rm -rf ${SUBDIR_DEST}/${YAML_FILE} && cp -r ${SUBDIR_SRC}/${YAML_FILE} ${SUBDIR_DEST}/${YAML_FILE}
+            # rm -rf ${SUBDIR_DEST}/${YAML_FILE} && cp -r ${SUBDIR_SRC}/${YAML_FILE} ${SUBDIR_DEST}/${YAML_FILE}
+
+            yq r "${SUBDIR_DEST}/${YAML_FILE}" -j | \
+              jq --arg APP_NAME "${APP_NAME}" --arg VERSION "${VERSION}" --arg REPO "${HELM_URL}" '.dependencies |= map((select(.name == $APP_NAME) | .version = $VERSION | .repository = $REPO) // .)' | \
+              yq r --prettyPrint - > "${SUBDIR_DEST}/${YAML_FILE}.new"
+
+            rm "${SUBDIR_DEST}/${YAML_FILE}"
+            mv "${SUBDIR_DEST}/${YAML_FILE}.new" "${SUBDIR_DEST}/${YAML_FILE}"
 
             echo "Requirements after update"
             cat "${SUBDIR_DEST}/${YAML_FILE}"
