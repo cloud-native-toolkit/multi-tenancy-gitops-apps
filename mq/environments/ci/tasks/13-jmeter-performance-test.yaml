@@ -82,7 +82,7 @@ spec:
           echo -n $route > /source/route.txt
         fi
     - name: jmeter-it
-      image: quay.io/hemankita/jmeter-11:latest
+      image: quay.io/cloudnativetoolkit/jmeter-11:latest
       workingDir: $(params.source-dir)
       script: |
         #!/usr/bin/env bash
