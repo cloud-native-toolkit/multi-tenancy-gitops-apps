@@ -1,0 +1,39 @@
+apiVersion: tekton.dev/v1beta1
+kind: Task
+metadata:
+  name: ibm-app-name
+  annotations:
+    description: Extracts the name of the application
+    app.openshift.io/description: application name
+    app.openshift.io/vcs-uri: https://github.com/IBM/ibm-garage-tekton-tasks
+    app.openshift.io/vcs-ref: master
+  labels:
+    version: 0.0.0
+spec:
+  params:
+    - name: git-url
+      default: ""
+    - name: git-revision
+      default: master
+    - name: source-dir
+      default: /source
+  results:
+    - name: app-name
+      description: The app name
+  volumes:
+    - name: source
+      emptyDir: {}
+  stepTemplate:
+    volumeMounts:
+      - name: source
+        mountPath: $(params.source-dir)
+  steps:
+  - name: app-name
+    image: quay.io/ibmgaragecloud/ibmcloud-dev:v2.0.4
+    workingDir: $(params.source-dir)
+    script: |
+      url=$(params.git-url)
+      basename=$(basename $url)
+      GIT_REPO=${basename%.*}
+      echo $GIT_REPO
+      echo -n "${GIT_REPO}" | tee $(results.app-name.path)
