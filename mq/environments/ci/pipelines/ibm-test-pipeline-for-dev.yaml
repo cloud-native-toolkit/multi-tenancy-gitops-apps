@@ -37,14 +37,22 @@ spec:
           value: "$(params.src-environment)"
         - name: test-file
           value: "$(params.test-file)"
+    - name: app-name
+      taskRef:
+        name: ibm-app-name
+      runAfter:
+        - dev-instance-tests
+      params:
+        - name: git-url
+          value: "$(params.git-url)"
     - name: gitops
       taskRef:
         name: ibm-gitops
       runAfter:
-        - dev-instance-tests
+        - app-name
       params:
         - name: app-name
-          value: "$(tasks.dev-instance-tests.results.app-name)"
+          value: "$(tasks.app-name.results.app-name)"
         - name: src-environment
           value: "$(params.src-environment)"
         - name: dest-environment
