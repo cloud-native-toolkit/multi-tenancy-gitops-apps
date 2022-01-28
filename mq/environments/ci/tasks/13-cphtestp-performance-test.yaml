@@ -1,0 +1,184 @@
+apiVersion: tekton.dev/v1beta1
+kind: Task
+metadata:
+  name: ibm-cphtestp-performance-test
+  annotations:
+    description: Executes a performance tests on a queue manager
+    app.openshift.io/description: Executes a performance tests on a queue manager
+    app.openshift.io/vcs-uri: https://github.com/IBM/ibm-garage-tekton-tasks
+    app.openshift.io/vcs-ref: master
+  labels:
+    version: 0.0.0
+spec:
+  params:
+    - name: git-url
+      default: ""
+    - name: git-revision
+      default: master
+    - name: source-dir
+      default: /source
+    - name: src-environment
+      default: ""
+    - name: test-plan
+      default: ""
+    - name: qm-security
+      default: ""
+  volumes:
+    - name: source
+      emptyDir: {}
+  stepTemplate:
+    volumeMounts:
+      - name: source
+        mountPath: $(params.source-dir)
+  steps:
+    - name: git-clone
+      image: quay.io/ibmgaragecloud/alpine-git
+      env:
+        - name: GIT_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: git-credentials
+              key: password
+              optional: true
+        - name: GIT_USERNAME
+          valueFrom:
+            secretKeyRef:
+              name: git-credentials
+              key: username
+              optional: true
+      script: |
+        set +x
+        if [[ -n "${GIT_USERNAME}" ]] && [[ -n "${GIT_PASSWORD}" ]]; then
+            git clone "$(echo $(params.git-url) | awk -F '://' '{print $1}')://${GIT_USERNAME}:${GIT_PASSWORD}@$(echo $(params.git-url) | awk -F '://' '{print $2}')" $(params.source-dir)
+        else
+            set -x
+            git clone $(params.git-url) $(params.source-dir)
+        fi
+        set -x
+        cd $(params.source-dir)
+        git checkout $(params.git-revision)
+    - name: resolve-route
+      image: quay.io/openshift/origin-cli:latest
+      workingDir: $(params.source-dir)
+      script: |
+        #!/bin/bash
+        set -e
+        SLEEP_TIME_SEC=10
+        RETRIES=20
+        SRC_ENV=$(echo $(params.src-environment) | cut -d "-" -f2)
+
+        url=$(params.git-url)
+        basename=$(basename $url)
+        echo $basename
+        GIT_REPO=${basename%.*}
+        echo $GIT_REPO
+        route=$(oc -n ${SRC_ENV} get route ${GIT_REPO} -o jsonpath='{.spec.host}' --ignore-not-found)
+
+        if [[ -z "$route" ]]; then
+          echo "This is a QueueManager ... Skipping this step"
+          exit 0
+        else
+          echo -n $route > /source/route.txt
+        fi
+    - name: cphtestp
+      image: quay.io/openshift/origin-cli:latest
+      workingDir: $(params.source-dir)
+      script: |
+        #!/usr/bin/env bash
+        set -ex
+        SRC_ENV=$(echo $(params.src-environment) | cut -d "-" -f2)
+        if [ ! -f /source/route.txt ]; then
+          # QMGR_NAME="qm-dev"
+          QMGR_NAME=$(oc get qmgr -n ${SRC_ENV} | awk 'NR>1 { printf sep $1; sep=" "}')
+          MQ_QM_NAME=$(oc get qmgr ${QMGR_NAME} -o jsonpath='{.spec.queueManager.name}' -n ${SRC_ENV})
+          QMGR_HOST_NAME=$(oc get svc ${QMGR_NAME}-ibm-mq -o jsonpath='{.metadata.name}' -n ${SRC_ENV})
+          QMGR_HTTP_PORT=$(oc get svc ${QMGR_NAME}-ibm-mq -o jsonpath='{.spec.ports[1].port}' -n ${SRC_ENV})
+          oc delete job cphtestp -n ${SRC_ENV} || true
+          if [ "$(params.qm-security)" = "false" ]; then
+        cat <<EOF | oc apply -f -
+        apiVersion: batch/v1
+        kind: Job
+        metadata:
+          labels:
+            run: cphtestp
+          name: cphtestp
+          namespace: ${SRC_ENV}
+        spec:
+          template:
+            metadata:
+              labels:
+                run: cphtestp
+            spec:
+              containers:
+              - env:
+                - name: LICENSE
+                  value: accept
+                - name: MQ_QMGR_HOSTNAME
+                  value: ${QMGR_HOST_NAME}
+                - name: MQ_QMGR_PORT
+                  value: "${QMGR_HTTP_PORT}"
+                - name: MQ_USERID
+                  value:
+                - name: MQ_PASSWORD
+                  value:
+                - name: MQ_QMGR_CHANNEL
+                  value: IBM.APP.SVRCONN
+                - name: MQ_RESPONDER_THREADS
+                  value: "64"
+                - name: MQ_NON_PERSISTENT
+                  value: "0"
+                - name: MQ_QMGR_NAME
+                  value: ${MQ_QM_NAME}
+                - name: MQ_DATA
+                  value:
+                - name: MQ_RESULTS_CSV
+                  value: "true"
+                - name: MQ_RESULTS
+                  value: "false"
+                image: quay.io/cloudnativetoolkit/cphtestp:v1
+                imagePullPolicy: Always
+                name: cphtestp
+                resources:
+                  requests:
+                    memory: "2Gi"
+                    cpu: "2"
+                  limits:
+                    memory: "2Gi"
+                    cpu: "2"
+                terminationMessagePath: /dev/termination-log
+                volumeMounts:
+                  - name: cphdata
+                    mountPath: /var/cph
+              dnsPolicy: ClusterFirst
+              restartPolicy: OnFailure
+              securityContext: {}
+              terminationGracePeriodSeconds: 30
+              volumes:
+              - name: cphdata
+                emptyDir: {}
+        EOF
+              oc get pods -n ${SRC_ENV}
+              oc get jobs -n ${SRC_ENV}
+              while true; do
+              if oc wait --for=condition=complete --timeout=0 job/cphtestp -n ${SRC_ENV} 2>/dev/null; then
+                job_result=0
+                break
+              fi
+              if oc wait --for=condition=failed --timeout=0 job/cphtestp -n ${SRC_ENV} 2>/dev/null; then
+                job_result=1
+                break
+              fi
+              sleep 3
+            done
+            if [[ $job_result -eq 1 ]]; then
+                echo "Job failed!"
+                exit 1
+            fi
+            echo "Job succeeded"
+            oc logs job/cphtestp -n ${SRC_ENV}
+          else
+            echo " Skipping tests ... Tests not yet defined for secure queue manager"
+          fi
+        else
+          echo "Skipping tests ... This is not a QueueManager"
+        fi
