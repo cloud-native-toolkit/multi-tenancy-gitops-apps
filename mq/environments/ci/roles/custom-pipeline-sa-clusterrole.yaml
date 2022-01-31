@@ -40,5 +40,10 @@ rules:
     apiGroups:
       - 'route.openshift.io'
     resources:
-      - routes      
-
+      - routes
+  - verbs:
+      - '*'
+    apiGroups:
+      - 'mq.ibm.com/v1beta1'
+    resources:
+      - QueueManager     
