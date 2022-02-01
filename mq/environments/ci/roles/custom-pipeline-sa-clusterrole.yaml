@@ -35,6 +35,7 @@ rules:
     resources:
       - pods
       - services
+      - pods/log
   - verbs:
       - '*'
     apiGroups:
@@ -44,6 +45,12 @@ rules:
   - verbs:
       - '*'
     apiGroups:
-      - 'mq.ibm.com/v1beta1'
+      - 'mq.ibm.com'
     resources:
-      - QueueManager     
+      - queuemanagers
+  - verbs:
+      - '*'
+    apiGroups:
+      - 'batch'
+    resources:
+      - jobs
