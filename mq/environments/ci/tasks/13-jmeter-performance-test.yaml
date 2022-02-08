@@ -21,9 +21,6 @@ spec:
       default: ""
     - name: test-plan
       default: ""
-  results:
-    - name: app-name
-      description: The app name
   volumes:
     - name: source
       emptyDir: {}
@@ -115,12 +112,3 @@ spec:
         else
           echo "Skipping tests ... Jmeter test plan does not exist"
         fi
-    - name: app-name
-      image: quay.io/ibmgaragecloud/ibmcloud-dev:v2.0.4
-      workingDir: $(params.source-dir)
-      script: |
-        url=$(params.git-url)
-        basename=$(basename $url)
-        GIT_REPO=${basename%.*}
-        echo $GIT_REPO
-        echo -n "${GIT_REPO}" | tee $(results.app-name.path)

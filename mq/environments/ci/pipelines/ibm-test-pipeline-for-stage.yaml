@@ -20,6 +20,9 @@ spec:
     - name: app-path
       description: Path in gitops repo
       default: mq/environments
+    - name: qm-security
+      description: Enable security for queueManager
+      default: "false"
     - name: git-pr
       description: Enable the pipeline to do a PR for the gitops repo
       default: "true"
@@ -27,9 +30,23 @@ spec:
       description: Path of the postman collection
       default: "jmeter/mq-spring-app.jmx"
   tasks:
-    - name: stage-instance-tests
+    - name: mq-stage-instance-tests
+      taskRef:
+        name: ibm-cphtestp-performance-test
+      params:
+        - name: git-url
+          value: "$(params.git-url)"
+        - name: src-environment
+          value: "$(params.src-environment)"
+        - name : qm-security
+          value: "$(params.qm-security)"
+        - name: test-plan
+          value: "$(params.test-plan)"
+    - name: app-stage-instance-tests
       taskRef:
         name: ibm-jmeter-performance-test
+      runAfter:
+        - mq-stage-instance-tests
       params:
         - name: git-url
           value: "$(params.git-url)"
@@ -37,14 +54,22 @@ spec:
           value: "$(params.src-environment)"
         - name: test-plan
           value: "$(params.test-plan)"
+    - name: app-name
+      taskRef:
+        name: ibm-app-name
+      runAfter:
+        - app-stage-instance-tests
+      params:
+        - name: git-url
+          value: "$(params.git-url)"
     - name: gitops
       taskRef:
         name: ibm-gitops
       runAfter:
-        - stage-instance-tests
+        - app-name
       params:
         - name: app-name
-          value: "$(tasks.stage-instance-tests.results.app-name)"
+          value: "$(tasks.app-name.results.app-name)"
         - name: src-environment
           value: "$(params.src-environment)"
         - name: dest-environment

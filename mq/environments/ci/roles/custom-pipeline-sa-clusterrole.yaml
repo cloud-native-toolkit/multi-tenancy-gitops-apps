@@ -35,10 +35,22 @@ rules:
     resources:
       - pods
       - services
+      - pods/log
   - verbs:
       - '*'
     apiGroups:
       - 'route.openshift.io'
     resources:
-      - routes      
-
+      - routes
+  - verbs:
+      - '*'
+    apiGroups:
+      - 'mq.ibm.com'
+    resources:
+      - queuemanagers
+  - verbs:
+      - '*'
+    apiGroups:
+      - 'batch'
+    resources:
+      - jobs
