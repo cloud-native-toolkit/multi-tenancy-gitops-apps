@@ -1,10 +1,10 @@
 apiVersion: appconnect.ibm.com/v1beta1
 kind: IntegrationServer
 metadata:
-  name: create-customer-details-rest
+  name: ${name}
 spec:
-  replicas: 1
+  replicas: ${replicas}
   pod:
     containers:
       runtime:
-        image: image-registry.openshift-image-registry.svc:5000/ci/create-customer-details-rest:d84754967ba21b0046e3bd955864990150b9daa3
+        image: ${image}
