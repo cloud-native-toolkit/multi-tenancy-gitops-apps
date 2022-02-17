@@ -1,0 +1,26 @@
+apiVersion: build.openshift.io/v1
+kind: BuildConfig
+metadata:
+  name: sh-tools
+spec:
+  output:
+    to:
+      kind: ImageStreamTag
+      name: sh-tools:latest
+  source:
+    dockerfile: |
+      FROM alpine@sha256:08d6ca16c60fe7490c03d10dc339d9fd8ea67c6466dea8d558526b1330a85930
+
+      RUN apk update && \
+          apk del yq && \
+          apk --no-cache add --update zip sed bash coreutils
+
+      ARG VERSION=v4.7.1
+      ARG BINARY=yq_linux_amd64
+
+      RUN wget  https://github.com/mikefarah/yq/releases/download/$VERSION/$BINARY -O /usr/bin/yq &&\
+          chmod +x /usr/bin/yq
+  strategy:
+    type: Docker
+  triggers:
+    - type: ConfigChange
