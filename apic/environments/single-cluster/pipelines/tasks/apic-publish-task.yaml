@@ -80,6 +80,12 @@ spec:
         value: $(params.git-products-path)
       - name: GIT_APIS_PATH
         value: $(params.git-apis-path)
+      # Default realm for provider organization owner in the API Manager Local User Registry
+      - name: PROV_ORG_REALM
+        value: "provider/default-idp-2"
+      # Default out of the box catalog name for any new provider organization
+      - name: PROV_ORG_CATALOG_NAME
+        value: "sandbox"
   steps:
     - name: pipeline-config
       image: quay.io/ibmgaragecloud/alpine-git
@@ -156,18 +162,18 @@ spec:
         python3 -mpip install PyYAML > /dev/null
         cd scripts
         python3 download_api_files_from_git.py
-    - name: replace-placeholders
-      image: $(params.python-image)
-      workingDir: $(params.source-dir)
-      script: |
-        set +x
-        echo "*******************************"
-        echo "** Step replace-placeholders **"
-        echo "*******************************"
-        # Pre-req for parsing YAML files
-        python3 -mpip install PyYAML > /dev/null
-        cd scripts
-        python3 replace_api_yaml_env_param.py
+    # - name: replace-placeholders
+    #   image: $(params.python-image)
+    #   workingDir: $(params.source-dir)
+    #   script: |
+    #     set +x
+    #     echo "*******************************"
+    #     echo "** Step replace-placeholders **"
+    #     echo "*******************************"
+    #     # Pre-req for parsing YAML files
+    #     python3 -mpip install PyYAML > /dev/null
+    #     cd scripts
+    #     python3 replace_api_yaml_env_param.py
     - name: publish-products
       image: $(params.python-image)
       workingDir: $(params.source-dir)

@@ -11,3 +11,8 @@ resources:
 # to be able to list services and routes in tools namespace
 - roles/role.yaml
 - roles/rolebinding.yaml
+
+# Secrets
+# - secrets/apic-pipeline-git.yaml
+# - secrets/apic-config-email-server.yaml
+# - secrets/apic-pipeline-provider-org.yaml
