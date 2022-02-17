@@ -1,9 +1,9 @@
 resources:
 - configmaps/gitops-repo-configmap.yaml
 - eventlisteners/ace-bar-event-listener.yaml
+- pipelines/ace-bar-pipeline.yaml
 - pipelines/ace-promote-dev-stage-pipeline.yaml
 - pipelines/ace-promote-stage-prod-pipeline.yaml
-- pipelines/ace-bar-pipeline.yaml
 - pvc/ace-bar-pvc.yaml
 - pvc/ace-test-pvc.yaml
 - roles/custom-pipeline-clusterrole.yaml
@@ -28,10 +28,10 @@ resources:
 - tasks/10-gitops.yaml
 - tasks/11-update-image.yaml
 - tasks/12-argo-tests.yaml
-- tasks/gitops-ace.yaml
 - tasks/ace-tasks.yaml
 - tasks/custom-buildah.yaml
 - tasks/functional-test-task.yaml
+- tasks/gitops-ace.yaml
 - tasks/ibm-gitops-for-ace-task.yaml
 - tasks/ibm-jmeter-performance-test.yaml
 - triggerbindings/ace-bar-trigger-binding.yaml
