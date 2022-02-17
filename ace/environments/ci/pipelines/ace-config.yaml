@@ -1,0 +1,170 @@
+apiVersion: tekton.dev/v1beta1
+kind: Pipeline
+metadata:
+  name: ace-config
+spec:
+  params:
+    - name: is-config-repo-url
+      type: string
+      default: git@github.com:ace-prod-ref/ace-config.git
+
+    - name: is-infra-repo-url
+      type: string
+      default: git@github.com:ace-prod-ref/ace-infra.git
+
+    - name: git-ops-repo-url
+      type: string
+      default: git@github.com:ace-prod-ref/multi-tenancy-gitops-apps.git
+
+    - name: git-ops-destination-directory
+      type: string
+      default: "ace/environments/base/configurations"
+    - name: git-ops-kustomization-path
+      type: string
+      default: "ace/environments/base/kustomization.yaml"
+
+    - name: github-pr-title
+      type: string
+      default: "Changes by Pipeline run: $(context.pipelineRun.name)"
+    - name: github-pr-body
+      type: string
+      default: "Changes by Pipeline run: $(context.pipelineRun.name)"
+    - name: github-pr-token-secret-name
+      type: string
+      default: cicd-acme
+
+  workspaces:
+    - name: shared-workspace
+    - name: ace-config-repo-secret
+    - name: ace-infra-repo-secret
+    - name: gitops-repo-secret
+
+  tasks:
+    - name: clone-is-config-repo
+      params:
+        - name: url
+          value: $(params.is-config-repo-url)
+        - name: subdirectory
+          value: is-config
+        - name: deleteExisting
+          value: "true"
+      taskRef:
+        kind: ClusterTask
+        name: git-clone
+      workspaces:
+        - name: output
+          workspace: shared-workspace
+        - name: ssh-directory
+          workspace: ace-config-repo-secret
+
+    - name: clone-is-infra-repo
+      params:
+        - name: url
+          value: $(params.is-infra-repo-url)
+        - name: subdirectory
+          value: is-infra
+        - name: deleteExisting
+          value: "true"
+      taskRef:
+        kind: ClusterTask
+        name: git-clone
+      workspaces:
+        - name: output
+          workspace: shared-workspace
+        - name: ssh-directory
+          workspace: ace-infra-repo-secret
+
+    - name: clone-gitops-repo
+      params:
+        - name: url
+          value: $(params.git-ops-repo-url)
+        - name: subdirectory
+          value: gitops-repo
+        - name: deleteExisting
+          value: "true"
+      taskRef:
+        kind: ClusterTask
+        name: git-clone
+      workspaces:
+        - name: output
+          workspace: shared-workspace
+        - name: ssh-directory
+          workspace: gitops-repo-secret
+
+    - name: resolve-props
+      params:
+        - name: is-source-directory
+          value: is-config
+      runAfter:
+        - clone-is-config-repo
+      taskRef:
+        kind: Task
+        name: resolve-props
+      workspaces:
+        - name: input
+          workspace: shared-workspace
+
+    - name: create-config
+      params:
+        - name: is-config-directory
+          value: is-config
+        - name: is-infra-directory
+          value: is-infra
+        - name: is-configuration-keystore
+          value: $(tasks.resolve-props.results.is-configuration-keystore)
+        - name: is-configuration-truststore
+          value: $(tasks.resolve-props.results.is-configuration-truststore)
+        - name: is-configuration-setdbparms
+          value: $(tasks.resolve-props.results.is-configuration-setdbparms)
+        - name: is-configuration-serverconf
+          value: $(tasks.resolve-props.results.is-configuration-serverconf)
+        - name: is-configuration-policyproject
+          value: $(tasks.resolve-props.results.is-configuration-policyproject)
+        - name: is-configuration-loopbackdatasource
+          value: $(tasks.resolve-props.results.is-configuration-loopbackdatasource)
+        - name: rendered-config-directory
+          value: gitops-repo/$(params.git-ops-destination-directory)
+        - name: repo-directory
+          value: gitops-repo
+        - name: user-name
+          value: "cicd.acme"
+        - name: user-email
+          value: "cicd@acme.com"
+        - name: kustomization-path
+          value: gitops-repo/$(params.git-ops-kustomization-path)
+        - name: branch_name
+          value: $(context.pipeline.name)-$(context.pipelineRun.name)
+      runAfter:
+        - resolve-props
+        - clone-is-infra-repo
+        - clone-gitops-repo
+      taskRef:
+        kind: Task
+        name: create-config
+      workspaces:
+        - name: workspace
+          workspace: shared-workspace
+        - name: ssh-directory
+          workspace: gitops-repo-secret
+    - name: create-pull-request
+      taskRef:
+        kind: Task
+        name: github-open-pr
+      runAfter:
+        - create-config
+      params:
+        - name: GITHUB_HOST_URL
+          value: api.github.com
+        - name: REPO_FULL_NAME
+          value: ace-prod-ref/multi-tenancy-gitops-apps
+        - name: HEAD
+          value: $(context.pipeline.name)-$(context.pipelineRun.name)
+        - name: BASE
+          value: master
+        - name: TITLE
+          value: $(params.github-pr-title)
+        - name: BODY
+          value: $(params.github-pr-body)
+        - name: GITHUB_TOKEN_SECRET_NAME
+          value: $(params.github-pr-token-secret-name)
+
