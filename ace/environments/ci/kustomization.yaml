@@ -1,11 +1,17 @@
 resources:
+# - buildconfig/sh-tools.yaml
 # - configmaps/gitops-repo-configmap.yaml
 # - eventlisteners/ace-bar-event-listener.yaml
+# - imagestreams/sh-tools.yaml
 # - pipelines/ace-bar-pipeline.yaml
+# - pipelines/ace-config.yaml
 # - pipelines/ace-promote-dev-stage-pipeline.yaml
 # - pipelines/ace-promote-stage-prod-pipeline.yaml
 # - pvc/ace-bar-pvc.yaml
+# - pvc/ace-config-pvc.yaml
 # - pvc/ace-test-pvc.yaml
+# - roles/custom-images-builder-role.yaml
+# - roles/custom-images-builder-rolebinding.yaml
 # - roles/custom-pipeline-clusterrole.yaml
 # - roles/custom-pipeline-clusterrolebinding.yaml
 # - routes/ace-bar-webhook-event-listener.yaml
@@ -29,10 +35,13 @@ resources:
 # - tasks/11-update-image.yaml
 # - tasks/12-argo-tests.yaml
 # - tasks/ace-tasks.yaml
+# - tasks/create-config.yaml
 # - tasks/custom-buildah.yaml
 # - tasks/functional-test-task.yaml
+# - tasks/github-open-pr.yaml
 # - tasks/gitops-ace.yaml
 # - tasks/ibm-gitops-for-ace-task.yaml
 # - tasks/ibm-jmeter-performance-test.yaml
+# - tasks/resolve-props.yaml
 # - triggerbindings/ace-bar-trigger-binding.yaml
 # - triggertemplates/ace-bar-trigger-template.yaml
