@@ -1,0 +1,246 @@
+apiVersion: tekton.dev/v1beta1
+kind: Task
+metadata:
+  name: create-config
+spec:
+  params:
+    - name: is-config-directory
+      type: string
+    - name: is-infra-directory
+      type: string
+    - name: is-configuration-keystore
+      type: string
+    - name: is-configuration-truststore
+      type: string
+    - name: is-configuration-setdbparms
+      type: string
+    - name: is-configuration-serverconf
+      type: string
+    - name: is-configuration-policyproject
+      type: string
+    - name: is-configuration-loopbackdatasource
+      type: string
+    - name: rendered-config-directory
+      type: string
+    - name: repo-directory
+      type: string
+    - name: user-name
+      type: string
+    - name: user-email
+      type: string
+    - name: user-home
+      type: string
+      default: "/root"
+    - name: kustomization-path
+      type: string
+    - name: branch_name
+      type: string
+  results:
+    - description: ""
+      name: configurations
+  steps:
+    - name: setup-configuration
+      env:
+        - name: IS_CONFIG_DIRECTORY
+          value: $(params.is-config-directory)
+        - name: IS_INFRA_DIRECTORY
+          value: $(params.is-infra-directory)
+        - name: IS_CONFIGURATION_KEYSTORE
+          value: $(params.is-configuration-keystore)
+        - name: IS_CONFIGURATION_TRUSTSTORE
+          value: $(params.is-configuration-truststore)
+        - name: IS_CONFIGURATION_SETDBPARMS
+          value: $(params.is-configuration-setdbparms)
+        - name: IS_CONFIGURATION_SERVERCONF
+          value: $(params.is-configuration-serverconf)
+        - name: IS_CONFIGURATION_POLICYPROJECT
+          value: $(params.is-configuration-policyproject)
+        - name: IS_CONFIGURATION_LOOPBACKDATASOURCE
+          value: $(params.is-configuration-loopbackdatasource)
+        - name: WORKSPACE_PATH
+          value: $(workspaces.workspace.path)
+        - name: RENDERED_CONFIG_DIRECTORY
+          value: $(params.rendered-config-directory)
+      image: image-registry.openshift-image-registry.svc:5000/ci/sh-tools
+      script: |
+        #!/bin/bash
+
+        set -e
+
+        config_template_path=${WORKSPACE_PATH}/${IS_INFRA_DIRECTORY}
+        rendered_config_directory=${RENDERED_CONFIG_DIRECTORY}
+        config_definition_path=${WORKSPACE_PATH}/${IS_CONFIG_DIRECTORY}
+
+        create_configurations() {
+          local type=$1
+          local config=$2
+
+          local sanitised_file_name=$(echo $config | sed 's/\./_/g;s/-/_/g;s/^[[:upper:]]/\L&/;s/[[:upper:]]/\L_&/g')
+          local sanitised_config_name=$(echo $config | sed 's/^[[:upper:]]/\L&/;s/_/-/g;s/[[:upper:]]/\L-&/g')
+
+          case $type in
+          setdbparms | keystore | truststore)
+            cp $config_template_path/configuration-with-secret.yaml $rendered_config_directory/$sanitised_file_name.yaml
+
+            e=$sanitised_config_name yq e -i '.spec.secretName = env(e)' $rendered_config_directory/$sanitised_file_name.yaml
+            ;;
+          serverconf)
+            cp $config_template_path/Configuration.yaml $rendered_config_directory/$sanitised_file_name.yaml
+
+            contents=$(base64 -w 0 $config_definition_path/$config)
+
+            e=$contents yq e -i '.spec.contents = env(e)' $rendered_config_directory/$sanitised_file_name.yaml
+            ;;
+          policyproject)
+            cp $config_template_path/Configuration.yaml $rendered_config_directory/$sanitised_file_name.yaml
+
+            pushd $config_definition_path > /dev/null
+            contents=$(zip -r - $config 2>/dev/null | base64 -w 0)
+            popd > /dev/null
+
+            e=$contents yq e -i '.spec.contents = env(e)' $rendered_config_directory/$sanitised_file_name.yaml
+            ;;
+          loopbackdatasource)
+            cp $config_template_path/Configuration.yaml $rendered_config_directory/$sanitised_file_name.yaml
+
+            pushd $config_definition_path > /dev/null
+            contents=$(zip - $config | base64 -w 0)
+            popd > /dev/null
+
+            e=$contents yq e -i '.spec.contents = env(e)' $rendered_config_directory/$sanitised_file_name.yaml
+            ;;
+          esac
+
+          e=$sanitised_config_name yq e -i '.metadata.name = env(e)' $rendered_config_directory/$sanitised_file_name.yaml
+          e=$type yq e -i '.spec.type = strenv(e)' $rendered_config_directory/$sanitised_file_name.yaml
+
+          echo $sanitised_file_name.yaml
+        }
+
+        process_configrations() {
+          local config_type=$1
+
+          for config in ${!config_type}; do
+            local config_pattern='^IS_CONFIGURATION_(.+)'
+            if [[ $config_type =~ $config_pattern ]]; then
+              local type=$(echo "${BASH_REMATCH[1]}" | sed -e 's/\(.*\)/\L\1/')
+            else
+              echo "unknown config type parameter: $config_type"
+              exit 1
+            fi
+
+            create_configurations $type $config
+
+          done
+        }
+
+        configurations=""
+
+        for config_type in IS_CONFIGURATION_SERVERCONF IS_CONFIGURATION_SETDBPARMS \
+                      IS_CONFIGURATION_KEYSTORE IS_CONFIGURATION_TRUSTSTORE \
+                      IS_CONFIGURATION_POLICYPROJECT IS_CONFIGURATION_LOOPBACKDATASOURCE; do
+
+          configurations="${configurations} $(process_configrations $config_type)"
+
+        done
+
+        echo created configurations: ${configurations## } 
+        echo -n ${configurations## } > $(results.configurations.path)
+      workingDir: $(workspaces.workspace.path)
+    - name: update-kustomization
+      env:
+        - name: DESTINATION_DIRECTORY
+          value: $(workspaces.workspace.path)/$(params.rendered-config-directory)
+        - name: CONFIGURATIONS_PATH
+          value: $(results.configurations.path)
+        - name: KUSTOMIZATION_PATH
+          value: $(workspaces.workspace.path)/$(params.kustomization-path)
+      image: image-registry.openshift-image-registry.svc:5000/ci/sh-tools
+      script: |-
+        #!/usr/bin/env bash
+
+        function update_kustomization_from_file() {
+          item_list_file_path=$1
+
+          items=$(cat $item_list_file_path)
+
+          for item in ${items[*]}; do
+            update_kustomization $item
+          done
+        }
+
+        function update_kustomization() {
+          local item=$1
+
+          local kustomization_path_dir=$(dirname ${KUSTOMIZATION_PATH})
+          local relative_path_to_item=$(realpath ${DESTINATION_DIRECTORY}/$item \
+            --relative-to ${kustomization_path_dir})
+
+          local contains=$(config=${relative_path_to_item} yq e '.resources[] | select(. == env(config))' \
+            ${KUSTOMIZATION_PATH})
+
+          if [[ -z $contains ]]; then
+            config=${relative_path_to_item} yq e -i '.resources = (.resources // []) + env(config)' \
+              ${KUSTOMIZATION_PATH}
+
+            prettyfy ${KUSTOMIZATION_PATH}
+          fi
+        }
+
+        function prettyfy() {
+          local file=$1
+
+          yq e --prettyPrint $file >/tmp/temp.yaml
+          mv /tmp/temp.yaml $file
+        }
+
+        if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
+          item_list_file_path=${CONFIGURATIONS_PATH}
+
+          update_kustomization_from_file $item_list_file_path
+
+          echo "updated kustomization file:"
+          cat ${KUSTOMIZATION_PATH}
+        fi
+    - name: push-configuration
+      env:
+        - name: GIT_USER_NAME
+          value: $(params.user-name)
+        - name: GIT_USER_EMAIL
+          value: $(params.user-email)
+        - name: WORKSPACE_SSH_DIRECTORY_PATH
+          value: $(workspaces.ssh-directory.path)
+        - name: PARAM_USER_HOME
+          value: $(params.user-home)
+        - name: BRANCH_NAME
+          value: $(params.branch_name)
+      workingDir: $(workspaces.workspace.path)/$(params.repo-directory)
+      image: bitnami/git
+      script: |
+        #!/usr/bin/env bash
+        set -eu
+
+        cp -R "${WORKSPACE_SSH_DIRECTORY_PATH}" "${PARAM_USER_HOME}"/.ssh
+        chmod 700 "${PARAM_USER_HOME}"/.ssh
+        chmod -R 400 "${PARAM_USER_HOME}"/.ssh/*
+
+        # Setting up the config for the git.
+        git config --global user.email "${GIT_USER_EMAIL}"
+        git config --global user.name "${GIT_USER_NAME}"
+
+        if [[ $(git status -s | wc -l) -eq 0 ]]; then
+          echo "No changes"
+          exit 0
+        fi
+
+        git checkout -b ${BRANCH_NAME}
+        git add .
+        git commit -m "Add configurations"
+
+        git status
+        git push --set-upstream origin ${BRANCH_NAME}
+
+
+  workspaces:
+    - name: workspace
+    - name: ssh-directory

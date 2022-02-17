@@ -1,0 +1,88 @@
+apiVersion: tekton.dev/v1beta1
+kind: Task
+metadata:
+  name: resolve-props
+spec:
+  params:
+    - name: is-source-directory
+  results:
+    - name: is-application-names
+    - name: release-name
+    - name: is-configuration-keystore
+    - name: is-configuration-truststore
+    - name: is-configuration-setdbparms
+    - name: is-configuration-serverconf
+    - name: is-configuration-policyproject
+    - name: is-configuration-loopbackdatasource
+    - name: mq-queue-name
+    - name: mq-end-point-policy-file
+    - name: registry-host
+    - name: previous-is-genenration
+    - name: previous-deployment-revision
+    - name: endpoint-path
+  steps:
+    - name: parse-source-properties
+      image: mikefarah/yq:4.7.1
+      script: |
+        set -ex
+
+        properties_yaml_path=$(workspaces.input.path)/$(params.is-source-directory)/pipeline_properties.yaml
+
+        if [[ ! -e $properties_yaml_path ]]; then
+          echo "no pipeline property file found"
+          exit 0
+        fi
+
+        resolve_props() {
+          exp=$1
+          result_path=$2
+
+          echo -n `yq e "$exp // [] | join (\" \")" $properties_yaml_path` > $result_path
+        }
+
+        resolve_prop() {
+          exp=$1
+          result_path=$2
+
+          echo -n `yq e "$exp // \"\" " $properties_yaml_path` > $result_path
+        }
+
+        resolve_props '.integrationServer.applicationNames' $(results.is-application-names.path)
+        resolve_prop '.integrationServer.releaseName' $(results.release-name.path)
+        resolve_prop '.integrationServer.endpoint-path' $(results.endpoint-path.path)
+        resolve_props '.integrationServer.configurations.keystore' $(results.is-configuration-keystore.path)
+        resolve_props '.integrationServer.configurations.truststore' $(results.is-configuration-truststore.path)
+        resolve_props '.integrationServer.configurations.setdbparms' $(results.is-configuration-setdbparms.path)
+        resolve_props '.integrationServer.configurations.serverconf' $(results.is-configuration-serverconf.path)
+        resolve_props '.integrationServer.configurations.policyproject' $(results.is-configuration-policyproject.path)
+        resolve_props '.integrationServer.configurations.loopbackdatasource' $(results.is-configuration-loopbackdatasource.path)
+
+        resolve_prop '.mq.queueName' $(results.mq-queue-name.path)
+        resolve_prop '.mq.endPointPolicyFile' $(results.mq-end-point-policy-file.path)
+
+    - name: resolve-ocp-properties
+      image: quay.io/openshift/origin-cli:latest
+      script: |
+        
+        release_name=$(cat $(results.release-name.path))
+        echo $release_name
+
+        set +e
+        previous_is_genenration=$(oc get integrationserver \
+                $release_name -o jsonpath='{.metadata.generation}' 2>/dev/null)
+        set +e
+
+        echo -n $previous_is_genenration > $(results.previous-is-genenration.path)
+
+        if [[ ! -z $previous_is_genenration ]]; then
+          oc get deployment \
+                -l app.kubernetes.io/instance=$release_name \
+                -o jsonpath='{$.items[0].metadata.annotations.deployment\.kubernetes\.io/revision}' 2>/dev/null > $(results.previous-deployment-revision.path)
+        else
+          touch $(results.previous-deployment-revision.path)
+        fi
+
+        echo -n $(oc registry info) > $(results.registry-host.path)
+
+  workspaces:
+    - name: input
