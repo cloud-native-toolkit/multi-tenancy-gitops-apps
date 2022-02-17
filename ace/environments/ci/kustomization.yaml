@@ -1,38 +1,38 @@
 resources:
-- configmaps/gitops-repo-configmap.yaml
-- eventlisteners/ace-bar-event-listener.yaml
-- pipelines/ace-bar-pipeline.yaml
-- pipelines/ace-promote-dev-stage-pipeline.yaml
-- pipelines/ace-promote-stage-prod-pipeline.yaml
-- pvc/ace-bar-pvc.yaml
-- pvc/ace-test-pvc.yaml
-- roles/custom-pipeline-clusterrole.yaml
-- roles/custom-pipeline-clusterrolebinding.yaml
-- routes/ace-bar-webhook-event-listener.yaml
-- secrets/basic-auth-rest-secret.yaml
-- secrets/git-credentials-secret.yaml
-- secrets/ibm-ace-server-jks-secret.yaml
-- secrets/ibm-ca-jks-secret.yaml
-- secrets/ibm-client-jks-secret.yaml
-- secrets/ibm-client-key-certs-secret.yaml
-- secrets/ibm-entitled-key-secret.yaml
-- serviceaccount/pipeline-serviceaccount.yaml
-- tasks/0-setup.yaml
-- tasks/2-build-tag-push-ace-bar.yaml
-- tasks/4-deploy.yaml
-- tasks/5-health-check.yaml
-- tasks/7-tag-release.yaml
-- tasks/8-image-release.yaml
-- tasks/9-helm-release.yaml
-- tasks/9-img-scan.yaml
-- tasks/10-gitops.yaml
-- tasks/11-update-image.yaml
-- tasks/12-argo-tests.yaml
-- tasks/ace-tasks.yaml
-- tasks/custom-buildah.yaml
-- tasks/functional-test-task.yaml
-- tasks/gitops-ace.yaml
-- tasks/ibm-gitops-for-ace-task.yaml
-- tasks/ibm-jmeter-performance-test.yaml
-- triggerbindings/ace-bar-trigger-binding.yaml
-- triggertemplates/ace-bar-trigger-template.yaml
+# - configmaps/gitops-repo-configmap.yaml
+# - eventlisteners/ace-bar-event-listener.yaml
+# - pipelines/ace-bar-pipeline.yaml
+# - pipelines/ace-promote-dev-stage-pipeline.yaml
+# - pipelines/ace-promote-stage-prod-pipeline.yaml
+# - pvc/ace-bar-pvc.yaml
+# - pvc/ace-test-pvc.yaml
+# - roles/custom-pipeline-clusterrole.yaml
+# - roles/custom-pipeline-clusterrolebinding.yaml
+# - routes/ace-bar-webhook-event-listener.yaml
+# - secrets/basic-auth-rest-secret.yaml
+# - secrets/git-credentials-secret.yaml
+# - secrets/ibm-ace-server-jks-secret.yaml
+# - secrets/ibm-ca-jks-secret.yaml
+# - secrets/ibm-client-jks-secret.yaml
+# - secrets/ibm-client-key-certs-secret.yaml
+# - secrets/ibm-entitled-key-secret.yaml
+# - serviceaccount/pipeline-serviceaccount.yaml
+# - tasks/0-setup.yaml
+# - tasks/2-build-tag-push-ace-bar.yaml
+# - tasks/4-deploy.yaml
+# - tasks/5-health-check.yaml
+# - tasks/7-tag-release.yaml
+# - tasks/8-image-release.yaml
+# - tasks/9-helm-release.yaml
+# - tasks/9-img-scan.yaml
+# - tasks/10-gitops.yaml
+# - tasks/11-update-image.yaml
+# - tasks/12-argo-tests.yaml
+# - tasks/ace-tasks.yaml
+# - tasks/custom-buildah.yaml
+# - tasks/functional-test-task.yaml
+# - tasks/gitops-ace.yaml
+# - tasks/ibm-gitops-for-ace-task.yaml
+# - tasks/ibm-jmeter-performance-test.yaml
+# - triggerbindings/ace-bar-trigger-binding.yaml
+# - triggertemplates/ace-bar-trigger-template.yaml
