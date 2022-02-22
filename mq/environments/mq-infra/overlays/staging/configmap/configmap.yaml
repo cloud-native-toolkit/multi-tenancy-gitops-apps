@@ -1,0 +1,39 @@
+---
+# Source: mq-infra/templates/configmap.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: mqsc-configmap
+data:
+  config.mqsc: |
+    define ql(APPQ)
+    define ql(REQUEST)
+    define ql(REQUEST1)
+    define ql(REQUEST2)
+    define ql(REQUEST3)
+    define ql(REQUEST4)
+    define ql(REQUEST5)
+    define ql(REQUEST6)
+    define ql(REQUEST7)
+    define ql(REQUEST8)
+    define ql(REQUEST9)
+    define ql(REQUEST10)
+    define ql(REPLY)
+    define ql(REPLY1)
+    define ql(REPLY2)
+    define ql(REPLY3)
+    define ql(REPLY4)
+    define ql(REPLY5)
+    define ql(REPLY6)
+    define ql(REPLY7)
+    define ql(REPLY8)
+    define ql(REPLY9)
+    define ql(REPLY10)
+    DEFINE QLOCAL(IBM.DEMO.Q) BOQNAME(IBM.DEMO.Q.BOQ) BOTHRESH(3) REPLACE
+    DEFINE QLOCAL(IBM.DEMO.Q.BOQ) REPLACE
+    * Use a different dead letter queue, for undeliverable messages
+    DEFINE QLOCAL('DEV.DEAD.LETTER.QUEUE') REPLACE
+    ALTER QMGR DEADQ('DEV.DEAD.LETTER.QUEUE')
+    DEFINE CHANNEL('IBM.APP.SVRCONN') CHLTYPE(SVRCONN)
+    ALTER QMGR CHLAUTH (DISABLED)
+    REFRESH SECURITY TYPE(CONNAUTH)

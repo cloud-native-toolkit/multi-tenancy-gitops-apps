@@ -1,0 +1,7 @@
+resources:
+ - ../../base
+ - configmap/configmap.yaml
+ # - configmap-security/configmap.yaml
+ # - mq-infra/hooks/post-sync-job.yaml
+patchesStrategicMerge:
+ - mq-infra/qm-template.yaml

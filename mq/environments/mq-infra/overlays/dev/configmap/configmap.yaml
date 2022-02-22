@@ -1,0 +1,16 @@
+---
+# Source: mq-infra/templates/configmap.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: mqsc-configmap
+data:
+  config.mqsc: |
+    DEFINE QLOCAL(IBM.DEMO.Q) BOQNAME(IBM.DEMO.Q.BOQ) BOTHRESH(3) REPLACE
+    DEFINE QLOCAL(IBM.DEMO.Q.BOQ) REPLACE
+    * Use a different dead letter queue, for undeliverable messages
+    DEFINE QLOCAL('DEV.DEAD.LETTER.QUEUE') REPLACE
+    ALTER QMGR DEADQ('DEV.DEAD.LETTER.QUEUE')
+    DEFINE CHANNEL('IBM.APP.SVRCONN') CHLTYPE(SVRCONN)
+    ALTER QMGR CHLAUTH (DISABLED)
+    REFRESH SECURITY TYPE(CONNAUTH)

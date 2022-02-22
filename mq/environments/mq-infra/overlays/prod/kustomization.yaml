@@ -1,0 +1,6 @@
+resources:
+ - ../../base
+ - configmap/configmap.yaml
+ # - configmap-security/configmap.yaml
+patchesStrategicMerge:
+ - mq-infra/qm-template.yaml

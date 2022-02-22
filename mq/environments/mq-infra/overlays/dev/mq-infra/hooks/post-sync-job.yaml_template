@@ -1,0 +1,38 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: trigger-dev-stage-promotion-pipeline-for-qmgr
+  namespace: ci
+  annotations:
+    argocd.argoproj.io/hook: PostSync
+spec:
+  template:
+    spec:
+      serviceAccountName: pipeline
+      containers:
+      - name: tests-in-dev-env
+        image: quay.io/rhcanada/tkn-cli
+        command:
+          - tkn
+        args:
+          - -n
+          - ci
+          - pipeline
+          - start
+          - ibm-mq-promote-dev-stage
+          - --param
+          - git-url=https://github.com/${GIT_ORG}/mq-infra.git
+          - --param
+          - git-revision=${GIT_BRANCH_QM1}
+          - --param
+          - src-environment=dev
+          - --param
+          - dest-environment=staging
+          - --param
+          - app-path="mq/environments"
+          - --param
+          - git-pr=true
+          - --param
+          - test-file="postman/mq-spring-app.postman_collection.json"
+      restartPolicy: Never
+  backoffLimit: 0
