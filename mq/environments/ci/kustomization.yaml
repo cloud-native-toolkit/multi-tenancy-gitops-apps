@@ -23,6 +23,8 @@ resources:
 - secrets/ibm-entitled-registry-credentials-secret.yaml
 #- secrets/mq-client-jks-password-secret.yaml
 - tasks/10-gitops.yaml
+- tasks/10-gitops-for-mq.yaml
+- tasks/10-gitops-promotion.yaml
 - tasks/11-app-name.yaml
 - tasks/12-functional-tests.yaml
 - tasks/13-jmeter-performance-test.yaml
