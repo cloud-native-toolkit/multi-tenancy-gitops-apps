@@ -174,8 +174,14 @@ spec:
                 echo "Job failed!"
                 exit 1
             fi
+            oc logs job/cphtestp -n ${SRC_ENV} | grep Results >> test.txt
+            if [ -s test.txt ]; then
+              oc logs job/cphtestp -n ${SRC_ENV}
+            else
+              echo "Tests failed!"
+              exit 1
+            fi
             echo "Job succeeded"
-            oc logs job/cphtestp -n ${SRC_ENV}
           else
             echo " Skipping tests ... Tests not yet defined for secure queue manager"
           fi
