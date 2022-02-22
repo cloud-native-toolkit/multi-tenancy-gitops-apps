@@ -12,12 +12,9 @@ spec:
     server: https://kubernetes.default.svc
   project: applications
   source:
-    path: mq/environments/dev/mq-spring-app
+    path: mq/environments/mq-spring-app/overlays/dev
     repoURL: https://github.com/cloud-native-toolkit-demos/multi-tenancy-gitops-apps.git
     targetRevision: master
-    helm:
-      valueFiles:
-      - values.yaml
   syncPolicy:
     automated:
       prune: true
