@@ -1,0 +1,7 @@
+resources:
+ - ../../base
+ - configmap/configmap.yaml
+ - configmap/configmap-ccdt.yaml
+ # - mq-spring-app/hooks/post-sync-job.yaml
+patchesStrategicMerge:
+ - mq-spring-app/deployment.yaml
