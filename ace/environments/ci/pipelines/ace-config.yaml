@@ -6,32 +6,32 @@ spec:
   params:
     - name: is-config-repo-url
       type: string
-      default: git@github.com:ace-prod-ref/ace-config.git
+      description: "SSH url of Configuration repository, ex: git@github.com:ace-prod-ref/ace-config.git"
 
     - name: is-infra-repo-url
       type: string
-      default: git@github.com:ace-prod-ref/ace-infra.git
+      description: "SSH url of Infrastructure repository, ex: git@github.com:ace-prod-ref/ace-infra.git"
 
     - name: git-ops-repo-url
       type: string
-      default: git@github.com:ace-prod-ref/multi-tenancy-gitops-apps.git
+      description: "SSH url of GitOps repository, ex: git@github.com:ace-prod-ref/multi-tenancy-gitops-apps.git"
 
-    - name: git-ops-destination-directory
+    - name: gitops-apps-repo-full-name
       type: string
-      default: "ace/environments/base/configurations"
-    - name: git-ops-kustomization-path
-      type: string
-      default: "ace/environments/base/kustomization.yaml"
+      description: "Repo name of GitOps repository, in github.com, ex: ace-prod-ref/multi-tenancy-gitops-apps"
 
     - name: github-pr-title
       type: string
       default: "Changes by Pipeline run: $(context.pipelineRun.name)"
+      description: "Title of pull request"
     - name: github-pr-body
       type: string
       default: "Changes by Pipeline run: $(context.pipelineRun.name)"
+      description: "Body of pull request"
     - name: github-pr-token-secret-name
       type: string
       default: cicd-acme
+      description: "Personal access token for CICD bot user"
 
   workspaces:
     - name: shared-workspace
@@ -123,7 +123,7 @@ spec:
         - name: is-configuration-loopbackdatasource
           value: $(tasks.resolve-props.results.is-configuration-loopbackdatasource)
         - name: rendered-config-directory
-          value: gitops-repo/$(params.git-ops-destination-directory)
+          value: gitops-repo/ace/environments/base/configurations
         - name: repo-directory
           value: gitops-repo
         - name: user-name
@@ -131,7 +131,7 @@ spec:
         - name: user-email
           value: "cicd@acme.com"
         - name: kustomization-path
-          value: gitops-repo/$(params.git-ops-kustomization-path)
+          value: gitops-repo/ace/environments/base/kustomization.yaml
         - name: branch_name
           value: $(context.pipeline.name)-$(context.pipelineRun.name)
       runAfter:
@@ -156,7 +156,7 @@ spec:
         - name: GITHUB_HOST_URL
           value: api.github.com
         - name: REPO_FULL_NAME
-          value: ace-prod-ref/multi-tenancy-gitops-apps
+          value: $(params.gitops-apps-repo-full-name)
         - name: HEAD
           value: $(context.pipeline.name)-$(context.pipelineRun.name)
         - name: BASE
