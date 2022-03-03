@@ -18,7 +18,7 @@ resources:
 - roles/custom-staging-pipeline-sa-rolebinding.yaml
 - roles/custom-prod-pipeline-sa-rolebinding.yaml
 #- routes/cntk-route.yaml
-- secrets/artifactory-access-secret.yaml
+#- secrets/artifactory-access-secret.yaml
 - secrets/git-credentials-secret.yaml
 - secrets/ibm-entitled-registry-credentials-secret.yaml
 #- secrets/mq-client-jks-password-secret.yaml
