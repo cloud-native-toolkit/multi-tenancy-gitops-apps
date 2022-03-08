@@ -4,11 +4,13 @@ resources:
 # - eventlisteners/ace-bar-event-listener.yaml
 # - imagestreams/sh-tools.yaml
 # - pipelines/ace-bar-pipeline.yaml
+# - pipelines/ace-integration-server.yaml
 # - pipelines/ace-config.yaml
 # - pipelines/ace-promote-dev-stage-pipeline.yaml
 # - pipelines/ace-promote-stage-prod-pipeline.yaml
 # - pvc/ace-bar-pvc.yaml
 # - pvc/ace-config-pvc.yaml
+# - pvc/ace-integration-server.yaml
 # - pvc/ace-test-pvc.yaml
 # - roles/custom-images-builder-role.yaml
 # - roles/custom-images-builder-rolebinding.yaml
@@ -21,7 +23,6 @@ resources:
 # - secrets/ibm-ca-jks-secret.yaml
 # - secrets/ibm-client-jks-secret.yaml
 # - secrets/ibm-client-key-certs-secret.yaml
-# - secrets/ibm-entitled-key-secret.yaml
 # - serviceaccount/pipeline-serviceaccount.yaml
 # - tasks/0-setup.yaml
 # - tasks/2-build-tag-push-ace-bar.yaml
@@ -35,6 +36,8 @@ resources:
 # - tasks/11-update-image.yaml
 # - tasks/12-argo-tests.yaml
 # - tasks/ace-tasks.yaml
+# - tasks/build-bar.yaml
+# - tasks/build-is.yaml
 # - tasks/create-config.yaml
 # - tasks/custom-buildah.yaml
 # - tasks/functional-test-task.yaml
