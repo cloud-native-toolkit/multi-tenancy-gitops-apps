@@ -1,18 +1,25 @@
 #!/usr/bin/env bash
 
-# Set variables
-IBM_ENTITLEMENT_KEY=<ENTITLEMENT-KEY>
-SEALEDSECRET_NAMESPACE=sealed-secrets
+set -eo pipefail
 
-# Create Kubernetes Secret yaml
-oc create secret docker-registry ibm-entitlement-key \
---docker-username=cp \
---docker-server=cp.icr.io \
---docker-password=${IBM_ENTITLEMENT_KEY} \
---dry-run=true -o yaml > delete-ibm-entitled-key-secret.yaml
+# Check variables
+if [ -z ${IBM_ENTITLEMENT_KEY} ]; then echo "Please set IBM_ENTITLEMENT_KEY when running script"; exit 1; fi
 
-# Encrypt the secret using kubeseal and private key from the cluster
-kubeseal --scope cluster-wide --controller-name=sealedsecretcontroller-sealed-secrets --controller-namespace=${SEALEDSECRET_NAMESPACE} -o yaml < delete-ibm-entitled-key-secret.yaml > ibm-entitled-key-secret.yaml
+SEALED_SECRET_NAMESPACE=${SEALED_SECRET_NAMESPACE:-sealed-secrets}
+SEALED_SECRET_CONTOLLER_NAME=${SEALED_SECRET_CONTOLLER_NAME:-sealed-secrets}
 
-# NOTE, do not check delete-ibm-entitled-key-secret.yaml into git!
-rm delete-ibm-entitled-key-secret.yaml
+oc create secret docker-registry \
+  ibm-entitlement-key \
+  --docker-username=cp \
+  --docker-server=cp.icr.io \
+  --docker-password=${IBM_ENTITLEMENT_KEY} \
+  --dry-run -o yaml \
+  | oc label -f- \
+    created-by=pipeline \
+    --local \
+    --dry-run -o yaml \
+  | kubeseal \
+    --scope cluster-wide \
+    --controller-name=${SEALED_SECRET_CONTOLLER_NAME} \
+    --controller-namespace=${SEALED_SECRET_NAMESPACE} \
+    -o yaml > ibm-entitlement-key-secret.yaml
