@@ -13,7 +13,7 @@ spec:
 
       RUN apk update && \
           apk del yq && \
-          apk --no-cache add --update zip sed bash coreutils
+          apk --no-cache add --update zip sed bash coreutils gettext
 
       ARG VERSION=v4.7.1
       ARG BINARY=yq_linux_amd64

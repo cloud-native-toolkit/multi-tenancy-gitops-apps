@@ -1,0 +1,153 @@
+kind: Task
+apiVersion: tekton.dev/v1beta1
+metadata:
+  name: build-integration-server
+spec:
+  params:
+    - name: is_manifest_template
+      type: string
+    - name: destination_is_manifest
+      type: string
+    - name: configurations
+      type: string
+    - name: name
+      type: string
+    - name: license
+      type: string
+    - name: license-use
+      type: string
+    - name: service-endpoint-type
+      type: string
+    - name: image
+      type: string
+    - name: version
+      type: string
+    - name: kustomization-path
+      type: string
+    - name: user-name
+      type: string
+    - name: user-email
+      type: string
+    - name: user-home
+      type: string
+    - name: branch_name
+      type: string
+    - name: repo-directory
+      type: string
+  workspaces:
+    - name: input
+    - name: ssh-directory
+  steps:
+    - name: create-custom-resource
+      image: image-registry.openshift-image-registry.svc:5000/ci/sh-tools
+      workingDir: $(workspaces.input.path)
+      env:
+        - name: IS_MANIFEST_TEMPLATE
+          value: $(params.is_manifest_template)
+        - name: DESTINATION_IS_MANIFEST
+          value: $(params.destination_is_manifest)
+        - name: CONFIGURATIONS
+          value: $(params.configurations)z
+        - name: NAME
+          value: $(params.name)
+        - name: LICENSE
+          value: $(params.license)
+        - name: LICENSE_USE
+          value: $(params.license-use)
+        - name: SERVICE_ENDPOINT_TYPE
+          value: $(params.service-endpoint-type)
+        - name: IMAGE
+          value: $(params.image)
+        - name: CONFIGURATIONS
+          value: $(params.configurations)
+        - name: VERSION
+          value: $(params.version)
+      script: |
+        #!/usr/bin/env bash
+
+        function create_integration_server() {
+          envsubst < ${IS_MANIFEST_TEMPLATE} > ${DESTINATION_IS_MANIFEST}
+
+          for configuration in ${CONFIGURATIONS} ; do
+            config=$configuration yq e -i '.spec.configurations = (.spec.configurations // []) + env(config)' ${DESTINATION_IS_MANIFEST}
+          done
+        }
+
+        if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
+          create_integration_server
+        fi
+    
+    - name: update-kustomization
+      env:
+        - name: DESTINATION_IS_MANIFEST
+          value: $(params.destination_is_manifest)
+        - name: KUSTOMIZATION_PATH
+          value: $(params.kustomization-path)
+      image: image-registry.openshift-image-registry.svc:5000/ci/sh-tools
+      script: |-
+        #!/usr/bin/env bash
+
+        function update_kustomization() {
+          local kustomization_path_dir=$(dirname ${KUSTOMIZATION_PATH})
+          local relative_path_to_item=$(realpath ${DESTINATION_IS_MANIFEST} \
+            --relative-to ${kustomization_path_dir})
+
+          local contains=$(config=${relative_path_to_item} yq e '.resources[] | select(. == env(config))' \
+            ${KUSTOMIZATION_PATH})
+
+          if [[ -z $contains ]]; then
+            config=${relative_path_to_item} yq e -i '.resources = (.resources // []) + env(config)' \
+              ${KUSTOMIZATION_PATH}
+
+            prettyfy ${KUSTOMIZATION_PATH}
+          fi
+        }
+
+        function prettyfy() {
+          local file=$1
+
+          yq e --prettyPrint $file >/tmp/temp.yaml
+          mv /tmp/temp.yaml $file
+        }
+
+        if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
+          update_kustomization
+        fi
+    
+    - name: push-manifest
+      env:
+        - name: GIT_USER_NAME
+          value: $(params.user-name)
+        - name: GIT_USER_EMAIL
+          value: $(params.user-email)
+        - name: WORKSPACE_SSH_DIRECTORY_PATH
+          value: $(workspaces.ssh-directory.path)
+        - name: PARAM_USER_HOME
+          value: $(params.user-home)
+        - name: BRANCH_NAME
+          value: $(params.branch_name)
+      workingDir: $(workspaces.input.path)/$(params.repo-directory)
+      image: bitnami/git
+      script: |
+        #!/usr/bin/env bash
+        set -eu
+
+        cp -R "${WORKSPACE_SSH_DIRECTORY_PATH}" "${PARAM_USER_HOME}"/.ssh
+        chmod 700 "${PARAM_USER_HOME}"/.ssh
+        chmod -R 400 "${PARAM_USER_HOME}"/.ssh/*
+
+        # Setting up the config for the git.
+        git config --global user.email "${GIT_USER_EMAIL}"
+        git config --global user.name "${GIT_USER_NAME}"
+
+        if [[ $(git status -s | wc -l) -eq 0 ]]; then
+          echo "No changes"
+          exit 0
+        fi
+
+        git checkout -b ${BRANCH_NAME}
+        git add .
+        git commit -m "Add IntegrationServer"
+
+        git status
+        git push --set-upstream origin ${BRANCH_NAME}

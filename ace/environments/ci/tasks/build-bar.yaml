@@ -1,0 +1,30 @@
+apiVersion: tekton.dev/v1beta1
+kind: Task
+metadata:
+  name: build-bar
+spec:
+  params:
+    - name: is-source-directory
+      type: string
+      description: directory where ACE source is located, relative to workspace
+    - name: is-application-name
+      type: string
+      description: name of the application
+  
+  steps:
+    - image: icr.io/appc-dev/ace-server:12.0.2.0-r2-20211115-123200-amd64
+      name: generate-bar
+      script: |
+        #!/usr/bin/env bash
+
+        rm -rf $(workspaces.workspace.path)/bars
+        mkdir -p $(workspaces.workspace.path)/bars
+        rm -rf $(workspaces.workspace.path)/source
+        
+        cp -r $(workspaces.workspace.path)/$(params.is-source-directory) $(workspaces.workspace.path)/source
+
+        . /opt/ibm/ace-12/server/bin/mqsiprofile
+
+        ibmint package --input-path $(workspaces.workspace.path)/source --output-bar-file $(workspaces.workspace.path)/bars/$(params.is-application-name).bar
+  workspaces:
+    - name: workspace
