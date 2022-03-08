@@ -1,0 +1,10 @@
+apiVersion: triggers.tekton.dev/v1alpha1
+kind: EventListener
+metadata:
+  name: mq-infra-post-stage
+spec:
+  serviceAccountName: pipeline
+  triggers:
+    - name: mq-infra-post-stage
+      template:
+        ref: mq-infra-post-stage
