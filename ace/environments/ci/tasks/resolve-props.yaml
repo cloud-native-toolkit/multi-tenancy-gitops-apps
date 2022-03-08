@@ -25,6 +25,7 @@ spec:
     - name: is-license-use
     - name: is-service-endpoint-type
     - name: is-version
+    - name: is-base-image
   steps:
     - name: parse-source-properties
       image: mikefarah/yq:4.7.1
@@ -71,6 +72,7 @@ spec:
         resolve_prop '.integrationServer.license.use' $(results.is-license-use.path)
         resolve_prop '.integrationServer.service.endpointType' $(results.is-service-endpoint-type.path)
         resolve_prop '.integrationServer.version' $(results.is-version.path)
+        resolve_prop '.integrationServer.baseImage' $(results.is-base-image.path)
 
     - name: resolve-ocp-properties
       image: quay.io/openshift/origin-cli:latest
