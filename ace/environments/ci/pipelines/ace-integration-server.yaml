@@ -1,0 +1,212 @@
+apiVersion: tekton.dev/v1beta1
+kind: Pipeline
+metadata:
+  name: ace-integration-server
+spec:
+  params:
+    - name: is-source-repo-url
+      type: string
+      description: "SSH url of ACE source repository, ex: git@github.com:ace-prod-ref/create-customer.git"
+
+    - name: is-infra-repo-url
+      type: string
+      description: "SSH url of Infrastructure repository, ex: git@github.com:ace-prod-ref/ace-infra.git"
+
+    - name: git-ops-repo-url
+      type: string
+      description: "SSH url of GitOps repository, ex: git@github.com:ace-prod-ref/multi-tenancy-gitops-apps.git"
+
+    - name: ace-base-image
+      type: string
+      default: icr.io/appc-dev/ace-server:12.0.2.0-r2-20211115-123200-amd64
+      description: "Base image for App Connect Interprise."
+
+    - name: gitops-apps-repo-full-name
+      type: string
+      description: "Repo name of GitOps repository, in github.com, ex: ace-prod-ref/multi-tenancy-gitops-apps"
+    - name: github-pr-title
+      type: string
+      default: "Changes by Pipeline run: $(context.pipelineRun.name)"
+      description: "Title of pull request"
+    - name: github-pr-body
+      type: string
+      default: "Changes by Pipeline run: $(context.pipelineRun.name)"
+      description: "Body of pull request"
+    - name: github-pr-token-secret-name
+      type: string
+      default: cicd-acme
+      description: "Personal access token for CICD bot user"
+
+  workspaces:
+    - name: shared-workspace
+    - name: ace-source-repo-secret
+    - name: ace-infra-repo-secret
+    - name: gitops-repo-secret
+
+  tasks:
+    - name: clone-is-source-repo
+      params:
+        - name: url
+          value: $(params.is-source-repo-url)
+        - name: subdirectory
+          value: is-source
+        - name: deleteExisting
+          value: "true"
+      taskRef:
+        kind: ClusterTask
+        name: git-clone
+      workspaces:
+        - name: output
+          workspace: shared-workspace
+        - name: ssh-directory
+          workspace: ace-source-repo-secret
+
+    - name: clone-is-infra-repo
+      params:
+        - name: url
+          value: $(params.is-infra-repo-url)
+        - name: subdirectory
+          value: is-infra
+        - name: deleteExisting
+          value: "true"
+      taskRef:
+        kind: ClusterTask
+        name: git-clone
+      workspaces:
+        - name: output
+          workspace: shared-workspace
+        - name: ssh-directory
+          workspace: ace-infra-repo-secret
+
+    - name: clone-gitops-repo
+      params:
+        - name: url
+          value: $(params.git-ops-repo-url)
+        - name: subdirectory
+          value: gitops-repo
+        - name: deleteExisting
+          value: "true"
+      taskRef:
+        kind: ClusterTask
+        name: git-clone
+      workspaces:
+        - name: output
+          workspace: shared-workspace
+        - name: ssh-directory
+          workspace: gitops-repo-secret
+
+    - name: resolve-props
+      params:
+      - name: is-source-directory
+        value: is-source
+      runAfter:
+        - clone-is-source-repo
+      taskRef:
+        kind: Task
+        name: resolve-props
+      workspaces:
+      - name: input
+        workspace: shared-workspace
+
+    - name: build-bar
+      params:
+      - name: is-source-directory
+        value: is-source
+      - name: is-application-name
+        value: $(tasks.resolve-props.results.is-application-name)
+      runAfter:
+        - resolve-props
+      taskRef:
+        kind: Task
+        name: build-bar
+      workspaces:
+      - name: workspace
+        workspace: shared-workspace
+
+    - name: build-is-image
+      params:
+        - name: BUILD_EXTRA_ARGS
+          value: --build-arg BASE=$(params.ace-base-image)
+        - name: TLSVERIFY
+          value: "false"
+        - name: IMAGE
+          value: $(tasks.resolve-props.results.registry-host)/$(context.pipelineRun.namespace)/$(tasks.resolve-props.results.is-release-name):$(tasks.clone-is-source-repo.results.commit)
+        - name: DOCKERFILE
+          value: $(workspaces.source.path)/is-infra/Dockerfile
+        - name: CONTEXT
+          value: $(workspaces.source.path)/bars
+      runAfter:
+        - clone-is-infra-repo
+        - build-bar
+      taskRef:
+        kind: ClusterTask
+        name: buildah
+      workspaces:
+        - name: source
+          workspace: shared-workspace
+
+    - name: build-integration-server
+      params:
+        - name: is_manifest_template
+          value: "$(workspaces.input.path)/is-infra/IntegrationServer.yaml"
+        - name: destination_is_manifest
+          value: "$(workspaces.input.path)/gitops-repo/ace/environments/base/integrationServer/$(tasks.resolve-props.results.is-release-name).yaml"
+        - name: configurations
+          value: $(tasks.resolve-props.results.is-configurations)
+        - name: name
+          value: $(tasks.resolve-props.results.is-release-name)
+        - name: license
+          value: $(tasks.resolve-props.results.is-license)
+        - name: license-use
+          value: $(tasks.resolve-props.results.is-license-use)
+        - name: service-endpoint-type
+          value: $(tasks.resolve-props.results.is-service-endpoint-type)
+        - name: image
+          value: $(tasks.resolve-props.results.registry-host)/$(context.pipelineRun.namespace)/$(tasks.resolve-props.results.is-release-name):$(tasks.clone-is-source-repo.results.commit)
+        - name: version
+          value: $(tasks.resolve-props.results.is-version)
+        - name: kustomization-path
+          value: "$(workspaces.input.path)/gitops-repo/ace/environments/base/kustomization.yaml"
+        - name: user-name
+          value: "cicd.acme"
+        - name: user-email
+          value: "cicd@acme.com"
+        - name: user-home
+          value: "/root"
+        - name: branch_name
+          value: $(context.pipeline.name)-$(context.pipelineRun.name)
+        - name: repo-directory
+          value: "gitops-repo"
+      runAfter:
+        - build-is-image
+        - clone-gitops-repo
+      taskRef:
+        kind: Task
+        name: build-integration-server
+      workspaces:
+        - name: input
+          workspace: shared-workspace
+        - name: ssh-directory
+          workspace: gitops-repo-secret
+
+    - name: create-pull-request
+      taskRef:
+        kind: Task
+        name: github-open-pr
+      runAfter:
+        - build-integration-server
+      params:
+        - name: GITHUB_HOST_URL
+          value: api.github.com
+        - name: REPO_FULL_NAME
+          value: $(params.gitops-apps-repo-full-name)
+        - name: HEAD
+          value: $(context.pipeline.name)-$(context.pipelineRun.name)
+        - name: BASE
+          value: master
+        - name: TITLE
+          value: $(params.github-pr-title)
+        - name: BODY
+          value: $(params.github-pr-body)
+        - name: GITHUB_TOKEN_SECRET_NAME
+          value: $(params.github-pr-token-secret-name)
