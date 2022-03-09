@@ -1,0 +1,18 @@
+apiVersion: route.openshift.io/v1
+kind: Route
+metadata:
+  name: mq-spring-app-post-stage
+  labels:
+    app.kubernetes.io/managed-by: EventListener
+    app.kubernetes.io/part-of: Triggers
+    eventlistener: mq-spring-app-post-stage
+  annotations:
+    openshift.io/host.generated: 'true'
+spec:
+  to:
+    kind: "Service"
+    name: el-mq-spring-app-post-stage
+    weight: 100
+  port:
+    targetPort: http-listener
+  wildcardPolicy: None

@@ -1,0 +1,2 @@
+resources:
+  - mq-infra/qm-template.yaml

@@ -128,9 +128,9 @@ spec:
           value: $(tasks.setup.results.scan-trivy)
         - name: scan-ibm
           value: $(tasks.setup.results.scan-ibm)
-    - name: helm-release
+    - name: gitops
       taskRef:
-        name: ibm-helm-release-v2-6-13
+        name: ibm-gitops-for-mq
       runAfter:
         - img-scan
       params:
@@ -140,30 +140,28 @@ spec:
           value: "$(tasks.setup.results.git-revision)"
         - name: source-dir
           value: "$(tasks.setup.results.source-dir)"
-        - name: image-url
-          value: "$(tasks.img-release.results.image-url)"
+        - name: image-server
+          value: "$(tasks.setup.results.image-server)"
+        - name: image-namespace
+          value: "$(tasks.setup.results.image-namespace)"
+        - name: image-repository
+          value: "$(tasks.setup.results.image-repository)"
+        - name: image-tag
+          value: "$(tasks.tag-release.results.tag)"
         - name: app-name
           value: "$(tasks.setup.results.app-name)"
+        - name: app-path
+          value: "$(params.app-path)"
+        - name: environment
+          value: "$(params.environment)"
         - name: deploy-ingress-type
           value: "$(tasks.setup.results.deploy-ingress-type)"
         - name: tools-image
           value: "$(tasks.setup.results.tools-image)"
-    - name: gitops
-      taskRef:
-        name: ibm-gitops
-      runAfter:
-        - helm-release
-      params:
-        - name: app-name
-          value: "$(tasks.setup.results.app-name)"
-        - name: version
-          value: "$(tasks.tag-release.results.tag)"
-        - name: helm-url
-          value: $(tasks.helm-release.results.helm-url)
-        - name: tools-image
-          value: "$(tasks.setup.results.tools-image)"
-        - name: app-path
-          value: "$(params.app-path)"
+        - name : security
+          value: "$(params.security)"
+        - name: ha
+          value: "$(params.ha)"
         - name: dest-environment
           value: "$(params.environment)"
         - name: git-pr

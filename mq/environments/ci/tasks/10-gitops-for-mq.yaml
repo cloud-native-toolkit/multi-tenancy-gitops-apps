@@ -1,0 +1,328 @@
+apiVersion: tekton.dev/v1beta1
+kind: Task
+metadata:
+  name: ibm-gitops-for-mq
+  annotations:
+    description: Generates MQ artifacts
+    app.openshift.io/description: Generates MQ artifacts
+    app.openshift.io/vcs-uri: https://github.com/IBM/ibm-garage-tekton-tasks
+    app.openshift.io/vcs-ref: master
+  labels:
+    version: 0.0.0
+spec:
+  params:
+    - name: git-url
+    - name: git-revision
+      default: master
+    - name: source-dir
+      default: /source
+    - name: image-server
+      default: ""
+    - name: image-namespace
+      default: ""
+    - name: image-repository
+      default: ""
+    - name: image-tag
+      default: ""
+    - name: app-name
+      default: ""
+    - name: app-path
+      default: ""
+    - name: environment
+      default: ""
+    - name : security
+      default: ""
+    - name: ha
+      default: ""
+    - name: deploy-ingress-type
+      default: "route"
+    - name: tools-image
+      default: quay.io/ibmgaragecloud/ibmcloud-dev:v2.0.4
+    - name: src-environment
+      default: ""
+    - name: dest-environment
+      default: ""
+    - name: subdir
+      default: ""
+    - name: parentdir
+      default: ""
+    - name: git-pr
+      default: "false"
+  results:
+    - name: service-port
+    - name: resource-type
+  volumes:
+    - name: source
+      emptyDir: {}
+  stepTemplate:
+    volumeMounts:
+      - name: source
+        mountPath: $(params.source-dir)
+  steps:
+    - name: git-clone
+      image: quay.io/ibmgaragecloud/alpine-git
+      env:
+        - name: GIT_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: git-credentials
+              key: password
+              optional: true
+        - name: GIT_USERNAME
+          valueFrom:
+            secretKeyRef:
+              name: git-credentials
+              key: username
+              optional: true
+      script: |
+        set +x
+        if [[ -n "${GIT_USERNAME}" ]] && [[ -n "${GIT_PASSWORD}" ]]; then
+            git clone "$(echo $(params.git-url) | awk -F '://' '{print $1}')://${GIT_USERNAME}:${GIT_PASSWORD}@$(echo $(params.git-url) | awk -F '://' '{print $2}')" $(params.source-dir)
+        else
+            set -x
+            git clone $(params.git-url) $(params.source-dir)
+        fi
+        set -x
+        cd $(params.source-dir)
+        git checkout $(params.git-revision)
+    - name: helm-template
+      image: $(params.tools-image)
+      workingDir: $(params.source-dir)
+      env:
+        - name: TLS_SECRET_NAME
+          valueFrom:
+            configMapKeyRef:
+              name: ibmcloud-config
+              key: TLS_SECRET_NAME
+              optional: true
+        - name: INGRESS_SUBDOMAIN
+          valueFrom:
+            configMapKeyRef:
+              name: ibmcloud-config
+              key: INGRESS_SUBDOMAIN
+              optional: true
+      script: |
+          #!/usr/bin/env bash
+          set -ex
+          GIT_URL="$(params.git-url)"
+          GIT_REVISION="$(params.git-revision)"
+          APP_NAME="$(params.app-name)"
+          IMAGE_SERVER="$(params.image-server)"
+          IMAGE_NAMESPACE="$(params.image-namespace)"
+          IMAGE_REPOSITORY="$(params.image-repository)"
+          IMAGE_URL="${IMAGE_SERVER}/${IMAGE_NAMESPACE}/${IMAGE_REPOSITORY}"
+          IMAGE_VERSION="$(params.image-tag)"
+          INGRESS_TYPE="$(params.deploy-ingress-type)"
+          if [[ "${INGRESS_TYPE}" == "route" ]]; then
+            ROUTE_ENABLED="true"
+            INGRESS_ENABLED="false"
+          else
+            ROUTE_ENABLED="false"
+            INGRESS_ENABLED="true"
+          fi
+
+          export CHART_ROOT=$(find . -name chart)
+          echo "CHART_ROOT: $CHART_ROOT"
+
+          FILE_NUM=$(find . -name 'Chart*.yaml' |wc -l)
+          if [[ "${FILE_NUM}" -gt 1 ]]; then
+            echo "Error: Found >1 Chart*.yaml"
+            exit 1
+          fi
+
+          export CHART=$(find . -name 'Chart*.yaml')
+          echo "CHART: $CHART"
+
+          export CHART_NAME=$(cat $CHART | yq r - name)
+          echo "CHART_NAME: $CHART_NAME"
+
+          # Update Chart name and version
+          if [[ "${CHART_NAME}" != "${APP_NAME}" ]]; then
+            echo "Renaming chart from ${CHART_NAME} to ${APP_NAME}"
+            cp -R "${CHART_ROOT}/${CHART_NAME}" "${CHART_ROOT}/${APP_NAME}"
+            cat "${CHART_ROOT}/${CHART_NAME}/Chart.yaml" | \
+                yq w - name "${APP_NAME}" | \
+                yq w - version "1.0.0-rc${IMAGE_VERSION}" > "${CHART_ROOT}/${APP_NAME}/Chart.yaml"
+          else
+            echo "Chart name and image name match: ${APP_NAME}"
+          fi
+
+          CHART_PATH="${CHART_ROOT}/${APP_NAME}"
+
+          RELEASE_NAME="${APP_NAME}"
+          echo "RELEASE_NAME: $RELEASE_NAME"
+
+          echo $(helm version)
+
+          echo "CHECKING CHART (lint)"
+          helm lint ${CHART_PATH}
+
+          PREFIX=""
+          if [[ -f "${CHART_PATH}/requirements.yaml" ]] || grep -Eq "^dependencies:" "${CHART_PATH}/Chart.yaml"; then
+              DEPENDENCY_FILE="${CHART_PATH}/Chart.yaml"
+              if [[ -f "${CHART_PATH}/requirements.yaml" ]]; then
+                  DEPENDENCY_FILE="${CHART_PATH}/requirements.yaml"
+              fi
+
+              PREFIX="$(yq r -j "${DEPENDENCY_FILE}" | jq -r '.dependencies | .[] | .alias // .name' | head -1)."
+          fi
+
+          # Update helm chart with repository and tag values
+          cat ${CHART_PATH}/values.yaml | \
+              yq w - "${PREFIX}nameOverride" "${APP_NAME}" | \
+              yq w - "${PREFIX}fullnameOverride" "${APP_NAME}" | \
+              yq w - "${PREFIX}vcsInfo.repoUrl" "${GIT_URL}" | \
+              yq w - "${PREFIX}vcsInfo.branch" "${GIT_REVISION}" | \
+              yq w - "${PREFIX}image.repository" "${IMAGE_URL}" | \
+              yq w - --style single "${PREFIX}image.tag" "${IMAGE_VERSION}" | \
+              yq w - "${PREFIX}ingress.enabled" "${INGRESS_ENABLED}" | \
+              yq w - "${PREFIX}route.enabled" "${ROUTE_ENABLED}" > ./values.yaml.tmp
+          cp ./values.yaml.tmp ${CHART_PATH}/values.yaml
+          cat ${CHART_PATH}/values.yaml
+
+          helm dep update "${CHART_PATH}"
+
+          mkdir yamls
+
+          # Using 'upgrade --install" for rolling updates. Note that subsequent updates will occur in the same namespace the release is currently deployed in, ignoring the explicit--namespace argument".
+          helm template ${RELEASE_NAME} ${CHART_PATH} \
+              --set security="$(params.security)" \
+              --set ha="$(params.ha)" \
+              --output-dir './yamls'
+      securityContext:
+        privileged: true
+    - name: gitops
+      image: $(params.tools-image)
+      workingDir: $(params.source-dir)
+      env:
+        - name: NAMESPACE
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.namespace
+        - name: HOME
+          value: /home/devops
+        - name: GIT_USERNAME
+          valueFrom:
+            secretKeyRef:
+              name: git-credentials
+              key: username
+              optional: true
+        - name: GIT_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: git-credentials
+              key: password
+              optional: true
+        - name: GIT_PARENT_DIR
+          valueFrom:
+            configMapKeyRef:
+              name: gitops-repo
+              key: parentdir
+              optional: true
+        - name: GIT_PROTOCOL
+          valueFrom:
+            configMapKeyRef:
+              name: gitops-repo
+              key: protocol
+              optional: true
+        - name: GIT_HOST
+          valueFrom:
+            configMapKeyRef:
+              name: gitops-repo
+              key: host
+              optional: true
+        - name: GIT_ORG
+          valueFrom:
+            configMapKeyRef:
+              name: gitops-repo
+              key: org
+              optional: true
+        - name: GIT_REPO
+          valueFrom:
+            configMapKeyRef:
+              name: gitops-repo
+              key: repo
+              optional: true
+        - name: GIT_BRANCH
+          valueFrom:
+            configMapKeyRef:
+              name: gitops-repo
+              key: branch
+              optional: true
+      script: |
+          #!/usr/bin/env bash
+          set -ex
+
+          APP_NAME="$(params.app-name)"
+
+          SUBDIR="$(params.subdir)"
+
+          if [[ -z "${SUBDIR}" ]]; then
+            SUBDIR="${APP_NAME}"
+          fi
+
+          PROTOCOL="${GIT_PROTOCOL}"
+          if [[ -z "${PROTOCOL}" ]]; then
+            PROTOCOL="https"
+          fi
+
+          if [[ -z "${GIT_HOST}" ]] || [[ -z "${GIT_ORG}" ]] || [[ -z "${GIT_REPO}" ]]; then
+              echo "GitOps repo has not been configured with confimap gitops-repo. Skipping trigger step"
+              exit 0
+          fi
+
+          set +x
+          if [[ -n "${GIT_USERNAME}" ]]; then
+            GIT_AUTH_USER="${GIT_USERNAME}"
+            GIT_AUTH_PWD="${GIT_PASSWORD}"
+          else
+            echo "Credentials for GitOps repo not set in secret gitops-cd-secret or git-credentials"
+            exit 1
+          fi
+          set -x
+
+          BRANCH_CMD=""
+          if [[ -n "${GIT_BRANCH}" ]]; then
+            BRANCH_CMD="-b ${GIT_BRANCH}"
+          fi
+
+          git config --global user.email "gitops@cloudnativetoolkit.dev"
+          git config --global user.name "Cloud Native Toolkit Pipeline"
+          echo "git clone ${BRANCH_CMD} ${PROTOCOL}://${GIT_AUTH_USER}:xxxx@${GIT_HOST}/${GIT_ORG}/${GIT_REPO}"
+          set +x
+          GIT_URL="${PROTOCOL}://${GIT_AUTH_USER}:${GIT_AUTH_PWD}@${GIT_HOST}/${GIT_ORG}/${GIT_REPO}"
+          git clone ${BRANCH_CMD} ${GIT_URL} gitops_cd
+          set -x
+          cd gitops_cd
+
+          SOURCE_DIR="../yamls/${SUBDIR}/templates"
+
+          if [[ ! -z "$(params.app-path)/${SUBDIR}/overlays/$(params.environment)/${SUBDIR}" ]]; then
+            rm -rf "$(params.app-path)/${SUBDIR}/overlays/$(params.environment)/${SUBDIR}/*"
+          fi
+
+          cp -r "$SOURCE_DIR"/*.yaml $(params.app-path)/"${SUBDIR}"/overlays/$(params.environment)/${SUBDIR}
+
+          APP_VERSION="$(git rev-parse HEAD | cut -c 1-8)"
+
+          if [[ $(git status -s | wc -l) -eq 0 ]]; then
+            echo "No changes"
+            exit 0
+          elif [[ "$(params.git-pr)" = "false" ]]; then
+            git add .
+            git commit -m "Updates ${APP_NAME} to ${VERSION}"
+            git push -v
+          else
+            git checkout -b cntk-ci-pipeline-${APP_NAME}-${APP_VERSION}
+
+            # push changes to git
+            git status
+            git add "${SUBDIR_DEST}/"
+            git commit -m "Cloudnative toolkit pipeline updates ${APP_NAME}" --no-edit --signoff
+
+            git push origin cntk-ci-pipeline-${APP_NAME}-${APP_VERSION}
+
+            GIT_PUSH_URL="${PROTOCOL}://api.github.com/repos/${GIT_ORG}/${GIT_REPO}/pulls"
+            curl -u ${GIT_AUTH_USER}:${GIT_AUTH_PWD} -d '{"title":"PR to promote to '$(params.dest-environment)' for '$(params.app-name)'","base":"'${GIT_BRANCH}'", "head":"'${GIT_ORG}':cntk-ci-pipeline-'${APP_NAME}'-'${APP_VERSION}'"}' ${GIT_PUSH_URL}
+
+          fi

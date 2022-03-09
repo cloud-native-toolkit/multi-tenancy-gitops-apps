@@ -18,11 +18,13 @@ resources:
 - roles/custom-staging-pipeline-sa-rolebinding.yaml
 - roles/custom-prod-pipeline-sa-rolebinding.yaml
 #- routes/cntk-route.yaml
-- secrets/artifactory-access-secret.yaml
+#- secrets/artifactory-access-secret.yaml
 - secrets/git-credentials-secret.yaml
 - secrets/ibm-entitled-registry-credentials-secret.yaml
 #- secrets/mq-client-jks-password-secret.yaml
 - tasks/10-gitops.yaml
+- tasks/10-gitops-for-mq.yaml
+- tasks/10-gitops-promotion.yaml
 - tasks/11-app-name.yaml
 - tasks/12-functional-tests.yaml
 - tasks/13-jmeter-performance-test.yaml
@@ -36,3 +38,21 @@ resources:
 - tasks/ibm-java-maven-test-v2-6-13.yaml
 - tasks/ibm-setup-v2-6-13.yaml
 - tasks/ibm-tag-release-v2-6-13.yaml
+
+# Automated promotion process triggers
+
+# - triggertemplates/mq-infra-dev-triggertemplate.yaml
+# - eventlisteners/mq-infra-dev-eventlistener.yaml
+# - routes/mq-infra-dev-route.yaml
+#
+# - triggertemplates/mq-spring-app-dev-triggertemplate.yaml
+# - eventlisteners/mq-spring-app-dev-eventlistener.yaml
+# - routes/mq-spring-app-dev-route.yaml
+#
+# - triggertemplates/mq-infra-stage-triggertemplate.yaml
+# - eventlisteners/mq-infra-stage-eventlistener.yaml
+# - routes/mq-infra-stage-route.yaml
+#
+# - triggertemplates/mq-spring-app-stage-triggertemplate.yaml
+# - eventlisteners/mq-spring-app-stage-eventlistener.yaml
+# - routes/mq-spring-app-stage-route.yaml

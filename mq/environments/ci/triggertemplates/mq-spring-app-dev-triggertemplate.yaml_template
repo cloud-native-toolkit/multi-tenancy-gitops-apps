@@ -1,0 +1,23 @@
+apiVersion: triggers.tekton.dev/v1alpha1
+kind: TriggerTemplate
+metadata:
+  labels:
+    app: mq-spring-app-post-dev
+  name: mq-spring-app-post-dev
+spec:
+  resourcetemplates:
+    - apiVersion: tekton.dev/v1beta1
+      kind: PipelineRun
+      metadata:
+        annotations:
+          argocd.argoproj.io/compare-options: IgnoreExtraneous
+          argocd.argoproj.io/sync-options: Prune=false
+        labels:
+          tekton.dev/pipeline: ibm-mq-promote-dev-stage
+        generateName: ibm-mq-promote-dev-stage-
+      spec:
+        params:
+        - name: git-url
+          value: https://github.com/${GIT_ORG}/mq-spring-app.git
+        pipelineRef:
+          name: ibm-mq-promote-dev-stage

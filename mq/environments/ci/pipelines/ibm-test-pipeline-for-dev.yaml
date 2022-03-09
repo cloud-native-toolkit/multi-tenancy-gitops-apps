@@ -47,7 +47,7 @@ spec:
           value: "$(params.git-url)"
     - name: gitops
       taskRef:
-        name: ibm-gitops
+        name: ibm-gitops-promotion
       runAfter:
         - app-name
       params:

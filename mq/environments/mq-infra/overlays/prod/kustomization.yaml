@@ -1,0 +1,9 @@
+resources:
+ - ../../base
+ - configmap/configmap.yaml
+ # - configmap-security/configmap.yaml
+ #- certificates/prod-mq-client-certificate.yaml
+ #- certificates/prod-mq-server-certificate.yaml
+ #- secrets/mq-client-jks-password-secret.yaml
+patchesStrategicMerge:
+ - mq-infra/qm-template.yaml
