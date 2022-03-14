@@ -23,6 +23,12 @@ resources:
 # - secrets/ibm-ca-jks-secret.yaml
 # - secrets/ibm-client-jks-secret.yaml
 # - secrets/ibm-client-key-certs-secret.yaml
+# - secrets/github-user-token-secret-cicd-acme.yaml
+# - secrets/gitops-repo-pk-secret-ace-config-at-github.yaml
+# - secrets/gitops-repo-pk-secret-ace-infra-at-github.yaml
+# - secrets/gitops-repo-pk-secret-multi-tenancy-gitops-apps-at-github.yaml
+# - secrets/gitops-repo-pk-secret-create-customer-at-github.yaml
+# - secrets/ibm-entitlement-key-secret.yaml
 # - serviceaccount/pipeline-serviceaccount.yaml
 # - tasks/0-setup.yaml
 # - tasks/2-build-tag-push-ace-bar.yaml

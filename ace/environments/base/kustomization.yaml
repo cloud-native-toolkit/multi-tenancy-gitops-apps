@@ -1,2 +1,5 @@
 resources:
-  # - dashboard/ace-dashboard.yaml
+#- configurations/create_customer_serverconf_yaml.yaml
+#- configurations/create_customer_policy.yaml
+#- secrets/ibm-entitlement-key-secret.yaml
+#- dashboard/ace-dashboard.yaml
